@@ -77,7 +77,7 @@ export const tokenURIEngineConfig = [
   },
   {
     "name": "Animated Mobius Loop II",
-    "value": "0x921A6d5ce62057167d4b34a5B0Ff7aA37104fDD4" as `0x${string}`,
+    "value": "0x9b98f5318d5Ac7104b488CD2082281855474E9da" as `0x${string}`,
   },
   {
     "name": "Other",
