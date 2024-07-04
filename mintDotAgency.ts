@@ -4,7 +4,7 @@ import { factoryABI, wrapFactory } from "./abi/factory"
 import { agencyABI, appABI } from './abi/agency'
 import { agentABI } from './abi/agent'
 import { erc6551AccountABI, erc6551Implementation, erc6551RegistryABI } from './abi/erc6551'
-import { concat, encodeAbiParameters, formatEther, getAddress, getFunctionSelector, keccak256, toHex, parseAbi, encodeFunctionData, formatUnits, parseUnits, encodePacked } from "viem"
+import { concat, encodeAbiParameters, formatEther, getAddress, getFunctionSelector, keccak256, toHex, parseAbi, encodeFunctionData, formatUnits, parseUnits, encodePacked, hexToString } from "viem"
 import { confirm } from '@inquirer/prompts';
 import { displayNotFundAndExit, inputAddress, selectWrapAddress, selectTokenId, inputETHNumber, inputMoreThanMinimumValue, chooseAgencyNFTWithTokenId, getExtraAgencyConfig, selectDotAgency, inputTokenNumber, selectOrInputTokenURIEngineAddress } from './utils/display'
 import { exit } from 'node:process';
@@ -409,8 +409,6 @@ const getERC20Name = async (tokenAddress: `0x${string}`) => {
     }
 }
 
-
-
 const setERC20Approve = async (tokenAddress: `0x${string}`, agencyAddress: `0x${string}`, tokenAmount: bigint) => {
     const { request } = await publicClient.simulateContract({
         account,
@@ -796,4 +794,25 @@ export const renouncePush = async () => {
         console.log(`All Renounce Done.`)
     }
 }
+
+export const addDotAgency = async () => {
+    const tokenId = await input({
+        message: "Input Your DotAgency TokenId: "
+    })
+    // console.log(tokenId)
+    const node = await publicClient.readContract({
+        ...dotAgency,
+        functionName: "getNode",
+        args: [BigInt(tokenId)]
+    })
+
+    const name = await publicClient.readContract({
+        ...dotAgency,
+        functionName: "getName",
+        args: [node]
+    })
+    
+    // console.log()
+    updateConfig({ name: hexToString(name), value: Number(tokenId) })
+} 
 // claimLockWrapCoin()

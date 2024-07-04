@@ -1,5 +1,5 @@
 import select from '@inquirer/select'
-import { mintDotAgency, deployAppAndAgency, setTokenURIEngine, changeDotAgencyTokenURI, rebaseFee, claimLockWrapCoin, renouncePush } from './mintDotAgency'
+import { mintDotAgency, deployAppAndAgency, setTokenURIEngine, changeDotAgencyTokenURI, rebaseFee, claimLockWrapCoin, renouncePush, addDotAgency } from './mintDotAgency'
 import { approvePush } from "./utils/stake"
 import chalk from 'chalk'
 
@@ -44,6 +44,11 @@ const userSelect = await select({
             name: "Renounce push management",
             value: "renouncePush",
             description: "Renounce forceApprove or forceCancel"
+        },
+        {
+            name: "Add DotAgency Config",
+            value: "addDotAgency",
+            description: "Import your own DotAgency in the config file"
         }
     ]
 })
@@ -80,6 +85,10 @@ switch (userSelect) {
     
     case "renouncePush":
         renouncePush()
+        break;
+    
+    case "addDotAgency":
+        addDotAgency()
         break;
         
     default:
