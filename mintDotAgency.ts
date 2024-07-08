@@ -14,7 +14,7 @@ import fs from 'fs'
 import chalk from 'chalk'
 import boxen from 'boxen'
 import { sleep } from "bun"
-import { getAgencyStrategy, getDotAgencyERC6551AddressByTokenID, getERC20Approve, getTokenBaseInfo, isApproveOrOwner } from "./utils/data"
+import { getAgencyStrategy, getAgentName, getDotAgencyERC6551AddressByTokenID, getERC20Approve, getTokenBaseInfo, isApproveOrOwner } from "./utils/data"
 import { existAgentName } from "./utils/resolver"
 import { WrapClaim } from "./abi/wrapClaim"
 
@@ -422,16 +422,6 @@ const setERC20Approve = async (tokenAddress: `0x${string}`, agencyAddress: `0x${
     console.log(`Approve Hash: ${chalk.blue(approveHash)}`)
 }
 
-const getAgentName = async (agentAddress: `0x${string}`) => {
-    const agentName = await publicClient.readContract({
-        address: agentAddress,
-        abi: appABI,
-        functionName: "name",
-    })
-
-    return agentName
-}
-
 const getAgentMaxSupply = async (agentAddress: `0x${string}`) => {
     const maxSupply = await publicClient.readContract({
         address: agentAddress,
@@ -806,13 +796,17 @@ export const addDotAgency = async () => {
         args: [BigInt(tokenId)]
     })
 
-    const name = await publicClient.readContract({
+    const name = hexToString(await publicClient.readContract({
         ...dotAgency,
         functionName: "getName",
         args: [node]
-    })
+    }))
     
     // console.log()
-    updateConfig({ name: hexToString(name), value: Number(tokenId) })
-} 
+    const isAddDotAgency = await confirm({ message: `Add ${chalk.blue(name)} to the configuration file?` })
+
+    if (isAddDotAgency) {
+        updateConfig({ name: name, value: Number(tokenId) })
+    }
+}
 // claimLockWrapCoin()

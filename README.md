@@ -92,3 +92,12 @@ bun run erc6551.ts
 ```
 
 This script is used to withdraw ERC20 assets from ERC6551 accounts. Users can find the ERC6551 account address through `.Agency ERC6551 Address` etc.
+
+```bash
+bun run info.ts
+```
+
+This script is used to obtain staking reward related data.
+
+- `ERC7527 Token Stake Reward` After staking ERC7527 tokens, you can get rewards in the current Epoch.
+- `DotAgency Stake Reward` Get ERC7527 staking data.

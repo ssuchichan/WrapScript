@@ -1,9 +1,10 @@
-import { parseAbi, toHex } from "viem"
+import { formatEther, parseAbi, toHex } from "viem"
 import { agencyABI, appABI } from "../abi/agency"
 import { dotAgency } from "../abi/dotAgency"
 import { erc20Abi } from "../abi/erc20Abi"
 import { erc6551Implementation, erc6551RegistryABI } from "../abi/erc6551"
 import { account, publicClient } from "../config"
+import { nftStake } from "../abi/stake"
 
 
 export const getAgencyStrategy = async (agencyAddress: `0x${string}`) => {
@@ -122,4 +123,43 @@ export const getERC20Approve = async (tokenAddress: `0x${string}`, agencyAddress
     })
 
     return result
+}
+
+export const getAgentName = async (agentAddress: `0x${string}`) => {
+    const agentName = await publicClient.readContract({
+        address: agentAddress,
+        abi: appABI,
+        functionName: "name",
+    })
+
+    return agentName
+}
+
+export const getAgentBaseInfo = async (agentAddress: `0x${string}`) => {
+    const agentBaseInfo = await publicClient.readContract({
+        ...nftStake,
+        functionName: "stakingOfNFT",
+        args: [agentAddress]
+    })
+
+    return {
+        accTokenPerShare: agentBaseInfo[3], 
+        points: agentBaseInfo[1], 
+        lastRewardBlock: agentBaseInfo[2],
+        tokenPerBlock: agentBaseInfo[5],
+        endBlockOfEpoch: agentBaseInfo[7],
+        unspentRewards: agentBaseInfo[6]
+    }
+}
+
+export const getAgentEpochReward = async (agentAddress: `0x${string}`, agencyTokenId: bigint) => {
+
+
+
+    if (agentInfo.points == BigInt(0)) {
+        return 0
+    }
+    const reward = (agentInfo.endBlockOfEpoch - agentInfo.lastRewardBlock) * agentInfo.tokenPerBlock / agentInfo.points;
+
+    return formatEther(reward / BigInt(1e12))
 }
