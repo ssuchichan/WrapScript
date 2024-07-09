@@ -5,12 +5,12 @@ const userSelect = await select({
     message: "WrapCoin Data",
     choices: [
         {
-            name: "ERC7527 Stake Reward",
+            name: "ERC7527 Token Stake Reward",
             value: "erc7527StakeReward",
             description: "Get the data of ERC7527 staking"
         },
         {
-            name: "DotAgency Stake Reward",
+            name: "ERC7527 Stake Reward",
             value: "dotAgencyStakeReward",
             description: "Get the data of staking"
         }

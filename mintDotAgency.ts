@@ -46,9 +46,9 @@ export const mintDotAgency = async () => {
         }
 
         const userPrice = await inputETHNumber("Maximum cost available for mint(ETH): ", formatEther(nowDotAgencyPrice * BigInt(21) / BigInt(20)))
-        const priceNonce = await getPriceNonce()
+        // const priceNonce = await getPriceNonce()
 
-        await mintDotAgencyName(dotAgencyName, userPrice, priceNonce)
+        await mintDotAgencyName(dotAgencyName, userPrice, BigInt(0))
     }
 }
 
@@ -344,56 +344,57 @@ const updateConfig = async (tokenId?: { name: string, value: number }, agency?: 
     fs.writeFileSync('config.json', JSON.stringify(userConfig))
 }
 
-const getPriceNonce = async () => {
+// const getPriceNonce = async () => {
+//     const { request, result } = await publicClient.simulateContract({
+//         account,
+//         ...dotAgency,
+//         functionName: 'commit',
+//     })
+
+//     const commitHash = await walletClient.writeContract(request)
+//     console.log(`Commit Hash: ${chalk.blue(commitHash)}`)
+
+//     let oneEthToWrap = BigInt(0)
+
+//     while (oneEthToWrap == BigInt(0)) {
+//         oneEthToWrap = await publicClient.readContract({
+//             ...dotAgency,
+//             functionName: "getBidWrapPrice",
+//             args: [result]
+//         })
+        
+//         await sleep(12000)
+//     }
+    
+//     console.log(`WRAP per ETH: ${chalk.blue(formatEther(oneEthToWrap))}`)
+
+//     return result
+// }
+
+const mintDotAgencyName = async (name: string, price: bigint, priceNonce: bigint) => {
+    // const oneEthToWrap = await publicClient.readContract({
+    //     ...dotAgency,
+    //     functionName: "getBidWrapPrice",
+    //     args: [priceNonce]
+    // })
+
+    // if (oneEthToWrap == BigInt(0)) {
+    //     console.log("Commit error, please re-execute the script")
+    // } else {
     const { request, result } = await publicClient.simulateContract({
         account,
         ...dotAgency,
-        functionName: 'commit',
+        value: price,
+        functionName: 'mint',
+        args: [name, priceNonce]
     })
 
-    const commitHash = await walletClient.writeContract(request)
-    console.log(`Commit Hash: ${chalk.blue(commitHash)}`)
+    const mintHash = await walletClient.writeContract(request)
 
-    let oneEthToWrap = BigInt(0)
-
-    while (oneEthToWrap == BigInt(0)) {
-        oneEthToWrap = await publicClient.readContract({
-            ...dotAgency,
-            functionName: "getBidWrapPrice",
-            args: [result]
-        })
-        
-        await sleep(12000)
-    }
-    
-    console.log(`WRAP per ETH: ${chalk.blue(formatEther(oneEthToWrap))}`)
-
-    return result
-}
-const mintDotAgencyName = async (name: string, price: bigint, priceNonce: bigint) => {
-    const oneEthToWrap = await publicClient.readContract({
-        ...dotAgency,
-        functionName: "getBidWrapPrice",
-        args: [priceNonce]
-    })
-
-    if (oneEthToWrap == BigInt(0)) {
-        console.log("Commit error, please re-execute the script")
-    } else {
-        const { request, result } = await publicClient.simulateContract({
-            account,
-            ...dotAgency,
-            value: price,
-            functionName: 'mint',
-            args: [name, priceNonce]
-        })
-
-        const mintHash = await walletClient.writeContract(request)
-
-        console.log(`Token ID: ${chalk.blue(result.toString(10))}`)
-        updateConfig({ name: name, value: Number(result) })
-        console.log(`Mint Hash: ${chalk.blue(mintHash)}`)
-    }
+    console.log(`Token ID: ${chalk.blue(result.toString(10))}`)
+    updateConfig({ name: name, value: Number(result) })
+    console.log(`Mint Hash: ${chalk.blue(mintHash)}`)
+    // }
 }
 
 const getERC20Name = async (tokenAddress: `0x${string}`) => {
