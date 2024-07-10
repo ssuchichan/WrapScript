@@ -1,5 +1,5 @@
 import select from '@inquirer/select'
-import { getDotAgencyEpochReward, getERC7527StakeData } from './utils/info';
+import { getDotAgencyEpochReward, getERC7527StakeData, lpStakeReward } from './utils/info';
 
 const userSelect = await select({
     message: "WrapCoin Data",
@@ -13,6 +13,11 @@ const userSelect = await select({
             name: "ERC7527 Stake Reward",
             value: "dotAgencyStakeReward",
             description: "Get the data of staking"
+        },
+        {
+            name: "LP Stake Reward",
+            value: "lpStakeReward",
+            description: "Get the data of lp staking"
         }
     ]
 })
@@ -24,7 +29,9 @@ switch (userSelect) {
     case "dotAgencyStakeReward":
         await getDotAgencyEpochReward()
         break;
-        
+    case "lpStakeReward":
+        await lpStakeReward()
+        break;
     default:
         break;
 }

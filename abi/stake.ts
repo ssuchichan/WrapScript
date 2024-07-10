@@ -1002,7 +1002,7 @@ export const nftStakeABI = [
             }
         ]
     }
-] as const ;
+] as const;
 
 export const lpStakeABI = [
     {
@@ -1025,6 +1025,19 @@ export const lpStakeABI = [
             }
         ],
         "stateMutability": "nonpayable"
+    },
+    {
+        "type": "function",
+        "name": "LPSupply",
+        "inputs": [],
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256",
+                "internalType": "uint256"
+            }
+        ],
+        "stateMutability": "view"
     },
     {
         "type": "function",

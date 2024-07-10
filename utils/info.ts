@@ -5,9 +5,9 @@ import { inputAddress } from "./display"
 import { publicClient, WrapCoinAddress } from "../config"
 import { agentABI } from "../abi/agent"
 import { formatEther, zeroAddress } from "viem"
-import { nftStake } from "../abi/stake"
+import { lpStake, nftStake } from "../abi/stake"
 import { erc20Abi } from "../abi/erc20Abi"
-import { couldStartTrivia } from "typescript"
+import { input } from "@inquirer/prompts"
 
 export const getERC7527StakeData = async () => {
     const appAddress = await inputAddress("Enter the ERC7527 token contract address: ")
@@ -28,7 +28,7 @@ export const getERC7527StakeData = async () => {
 
     if (agentInfo.endBlockOfEpoch === BigInt(0)) {
         console.log(`${chalk.blue(agencyName)} has not initiated staking.`)
-        return 
+        return
     }
     const nowBlockNumber = await publicClient.getBlockNumber()
 
@@ -37,7 +37,7 @@ export const getERC7527StakeData = async () => {
         console.log(boxen(`Agency Name: ${chalk.blue(agencyName)}\n`
             + `End BlockNumber Of Epoch: ${chalk.blue(Number(nowBlockNumber) + 42000)}\n`
             + `Stake Reward: ${chalk.blue(formatEther(stakeReward))}`, { padding: 1 }
-        )) 
+        ))
     } else {
         const stakeReward = (agentInfo.endBlockOfEpoch - nowBlockNumber) * agentInfo.tokenPerBlock / (agentInfo.points + BigInt(1)) / BigInt(1e12)
 
@@ -46,7 +46,7 @@ export const getERC7527StakeData = async () => {
             + `Stake Reward: ${chalk.blue(formatEther(stakeReward))}`, { padding: 1 }
         ))
     }
-    
+
     console.log(`${chalk.blueBright("Stake Reward")} refers to the reward you get when you stake to ${chalk.blueBright("End BlockNumber Of Epoch")}`)
 }
 
@@ -63,7 +63,7 @@ export const getDotAgencyEpochReward = async () => {
     const agencyName = await getAgentName(agencySettings[0])
     const nowBlockNumber = await publicClient.getBlockNumber()
 
-    const [ endBlockOfEpoch, tokenPerBlock ] = await publicClient.multicall({
+    const [endBlockOfEpoch, tokenPerBlock] = await publicClient.multicall({
         contracts: [
             {
                 ...nftStake,
@@ -75,7 +75,7 @@ export const getDotAgencyEpochReward = async () => {
             }
         ]
     })
-    
+
     const stakingData = await publicClient.readContract({
         ...nftStake,
         functionName: "stakingOfNFT",
@@ -94,7 +94,7 @@ export const getDotAgencyEpochReward = async () => {
             ...nftStake,
             functionName: "l1StakingOfERC20"
         })
-        
+
         let stakeTVL: bigint;
         let epochReward: bigint;
         let endBlockNumberOfEpoch: bigint;
@@ -126,7 +126,7 @@ export const getDotAgencyEpochReward = async () => {
             + `Epoch All Reward: ${chalk.blue(formatEther(epochReward))}\n`
             + `Agency TVL: ${chalk.blue(formatEther(tvlOfAgency))}\n`
             + `WRAP Stake TVL: ${chalk.blue(formatEther(stakeTVL))}`, { padding: 1 }
-        ))  
+        ))
     }
 
     if (agencySettings[1].currency == zeroAddress) {
@@ -170,6 +170,56 @@ export const getDotAgencyEpochReward = async () => {
             + `Epoch All Reward: ${chalk.blue(formatEther(epochReward))}\n`
             + `Agency TVL: ${chalk.blue(formatEther(tvlOfAgency))}\n`
             + `ETH Stake TVL: ${chalk.blue(formatEther(stakeTVL))}`, { padding: 1 }
-        ))  
+        ))
     }
+}
+
+export const lpStakeReward = async () => {
+    const userAddress = await inputAddress("Please enter the address of the LP token staker: ")
+    const [amount] = await publicClient.readContract({
+        ...lpStake,
+        functionName: "userInfo",
+        args: [userAddress]
+    })
+
+    const [endBlockOfEpoch, totalStakeLp, rewardPerBlock] = await publicClient.multicall({
+        contracts: [
+            {
+                ...lpStake,
+                functionName: "endBlockOfEpoch"
+            },
+            {
+                ...lpStake,
+                functionName: "LPSupply"
+            },
+            {
+                ...lpStake,
+                functionName: "rewardPerBlock"
+            }
+        ]
+    })
+
+    const nowBlockNumber = await publicClient.getBlockNumber()
+    const stakePercentage = Number(amount * BigInt(10000) / totalStakeLp.result!) / 100
+
+    let stakeReward: bigint
+
+    if (endBlockOfEpoch.result! > nowBlockNumber) {
+        stakeReward = rewardPerBlock.result! * (endBlockOfEpoch.result! - nowBlockNumber) * amount / totalStakeLp.result! / BigInt(1e40)
+    } else {
+        const inputReward = await publicClient.readContract({
+            address: WrapCoinAddress,
+            abi: erc20Abi,
+            functionName: "balanceOf",
+            args: ["0xe3c6EF4CCF39E117a5504653b5A704abd091C7d3"]
+        })
+
+        stakeReward = inputReward * amount / totalStakeLp.result! / BigInt(1e40)
+    }
+
+    console.log(boxen(`Stake LP Amount: ${chalk.blue(formatEther(amount))} (${stakePercentage}%)\n`
+        + `Total LP Stake Amount: ${chalk.blue(formatEther(totalStakeLp.result))}\n`
+        + `Stake Reward: ${chalk.blue(formatEther(stakeReward))}\n`
+        + `End BlockNumber Of Epoch: ${chalk.blue(Number(endBlockOfEpoch.result))}`, { padding: 1 }
+    ))
 }
