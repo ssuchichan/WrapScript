@@ -33,7 +33,7 @@ export const getERC7527StakeData = async () => {
     const nowBlockNumber = await publicClient.getBlockNumber()
 
     if (agentInfo.endBlockOfEpoch < nowBlockNumber) {
-        const stakeReward = agentInfo.unspentRewards / (agentInfo.points + BigInt(1))
+        const stakeReward = agentInfo.unspentRewards / (agentInfo.points + BigInt(1)) / BigInt(1e12)
         console.log(boxen(`Agency Name: ${chalk.blue(agencyName)}\n`
             + `End BlockNumber Of Epoch: ${chalk.blue(Number(nowBlockNumber) + 42000)}\n`
             + `Stake Reward: ${chalk.blue(formatEther(stakeReward))}`, { padding: 1 }
