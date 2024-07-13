@@ -30,7 +30,7 @@ export const walletClient: WalletClient = createWalletClient({
   transport: http(rpcUrl)
   // transport: http("http://127.0.0.1:8545")
 })
-
+// console.log(`Account Address: ${account.address}`)
 export const publicClient: PublicClient = createPublicClient({
   chain: mainnet,
   transport: http(rpcUrl)
@@ -45,25 +45,25 @@ export const agencyAndAppConfig = [
   //   "agencyImplementation": "0xaB0E85c463C27F8A5501B5933F6Da1D18Ab62283",
   //   "appImplementation": "0x1C91bEB7d3249846E226A029DE93BEb5eA1e4CFe"
   // },
+  // {
+  //   "name": "WrapV2Auction",
+  //   "value": "auctionConfig",
+  //   "description": "Minting prices are obtained through auctions",
+  //   "agencyImplementation": "0x120E8cC16D6Bd9BCc4E94609D668F96aB8BAA3D9",
+  //   "appImplementation": "0x48534DAEb3F0b7d91FcB2618C651aD075703f07E"
+  // },
   {
-    "name": "WrapV2Auction",
+    "name": "WrapV3Auction",
     "value": "auctionConfig",
     "description": "Minting prices are obtained through auctions",
-    "agencyImplementation": "0x120E8cC16D6Bd9BCc4E94609D668F96aB8BAA3D9",
+    "agencyImplementation": "0x78B979DDb11716e7af784edb970348f9584a5a12",
     "appImplementation": "0x48534DAEb3F0b7d91FcB2618C651aD075703f07E"
-  },
-  // {
-  //   "name": "WrapV1RandomWalker",
-  //   "value": "randomConfig",
-  //   "description": "Minting prices are obtained through standard normal random",
-  //   "agencyImplementation": "0x47303297b8ED07FA8763b487e7f12CA1e11033A2",
-  //   "appImplementation": "0x1C91bEB7d3249846E226A029DE93BEb5eA1e4CFe"
-  // }
+  }
 ]
 
 export const uniswapV2Pair = "0x5Ff788F688650d3b0cB37E976e71d604D8229064" as `0x${string}`
 
-export const defaultDotAgencyTokenURI = "0x6077dECB9a55093626754653a34276Cf49C5E684" as `0x${string}`
+export const defaultDotAgencyTokenURI = "0xC61bbBb218d82DB23d76cEE8A1146aC6AF442Fe8" as `0x${string}`
 
 export const defaultAgentResolver = "0x21244259bE899fE7FB798B198a8BD70AB9873ABB" as `0x${string}`
 export const defaultDotAgencyResolver = "0x6aCca1410C16FfDD60866be84b541492C2398C4e" as `0x${string}`
@@ -73,11 +73,11 @@ export const WrapCoinAddress = "0x989436e4194af162546F595Afc6336A15b3DCa7d" as `
 export const tokenURIEngineConfig = [
   {
     "name": "Animated Mobius Loop I",
-    "value": "0x2c7d1dd08844ae0BcEFC69c1ce915220A6d84D24" as `0x${string}`,
+    "value": "0x41C01cD8562f3726D9ff685397732A9694F8E197" as `0x${string}`,
   },
   {
     "name": "Animated Mobius Loop II",
-    "value": "0x9b98f5318d5Ac7104b488CD2082281855474E9da" as `0x${string}`,
+    "value": "0xB0419aFd9530e36b9F56f959Fdd5adE04Dd637fa" as `0x${string}`,
   },
   {
     "name": "Other",

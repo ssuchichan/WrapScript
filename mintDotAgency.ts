@@ -17,6 +17,7 @@ import { sleep } from "bun"
 import { getAgencyStrategy, getAgentName, getDotAgencyERC6551AddressByTokenID, getERC20Approve, getTokenBaseInfo, isApproveOrOwner } from "./utils/data"
 import { existAgentName } from "./utils/resolver"
 import { WrapClaim } from "./abi/wrapClaim"
+import { erc20Abi } from "./abi/erc20Abi"
 
 const accountBalance = await publicClient.getBalance(account)
 
@@ -330,7 +331,6 @@ const existName = async (name: string) => {
 const normalName = (name: string) => {
   const regex = /^[a-z0-9]+$/;
 
-  // test 方法检查字符串是否匹配正则表达式模式
   return regex.test(name);
 }
 
@@ -584,7 +584,7 @@ const getAgenctBurnPrice = async (agencyAddress: `0x${string}`, appAddress: `0x$
         functionName: "getUnwrapOracle",
         args: [toHex(totalSupply, { size: 32 })]
     })
-
+    // console.log(`Price: ${formatEther(nowAgencyBurnPrice[0])} And Fee: ${formatEther(nowAgencyBurnPrice[1])}`)
     return nowAgencyBurnPrice
 }
 
@@ -696,19 +696,39 @@ export const claimLockWrapCoin = async () => {
 
     if (answer) {
         const dotAgencyNFTERC6551Address = await getDotAgencyERC6551AddressByTokenID(dotAgencyTokenId)
-        console.log(`Wrap Recipient ERC6551 Address: ${chalk.blue(dotAgencyNFTERC6551Address)}`)
-        const data = encodeFunctionData({
+        const receiveAddress = await inputAddress("WRAP Recipient Address: ", walletClient.account!.address!)
+        // console.log(`Wrap Recipient ERC6551 Address: ${chalk.blue(dotAgencyNFTERC6551Address)}`)
+        const claimData = encodeFunctionData({
             abi: WrapClaim.abi,
             functionName: "claim",
             args: [dotAgencyTokenId]
+        })
+        
+        const transferAmount = await publicClient.readContract({
+            address: WrapCoinAddress,
+            abi: erc20Abi,
+            functionName: "balanceOf",
+            args: [dotAgencyNFTERC6551Address]
+        })
+        
+        const transferCalldata = encodeFunctionData({
+            abi: erc20Abi,
+            functionName: "transfer",
+            args: [receiveAddress, transferAmount + unlockWrapCoin - BigInt(1)]
         })
 
         const { request } = await publicClient.simulateContract({
             account,
             address: dotAgencyNFTERC6551Address,
             abi: erc6551AccountABI,
-            functionName: "execute",
-            args: [WrapClaim.address, BigInt(0), data, 0]
+            functionName: "executeBatch",
+            args: [
+                [
+                    {target: WrapClaim.address, value: BigInt(0), data: claimData},
+                    {target: WrapCoinAddress, value: BigInt(0), data: transferCalldata},
+                ],
+                0
+            ]
         })
 
         const claimHash = await walletClient.writeContract(request)
