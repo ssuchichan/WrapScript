@@ -584,7 +584,7 @@ const getAgenctBurnPrice = async (agencyAddress: `0x${string}`, appAddress: `0x$
         functionName: "getUnwrapOracle",
         args: [toHex(totalSupply, { size: 32 })]
     })
-    // console.log(`Price: ${formatEther(nowAgencyBurnPrice[0])} And Fee: ${formatEther(nowAgencyBurnPrice[1])}`)
+    console.log(`Unwrap Price: ${chalk.blue(formatEther(nowAgencyBurnPrice[0]))} And Unwrap Fee: ${chalk.blue(formatEther(nowAgencyBurnPrice[1]))}`)
     return nowAgencyBurnPrice
 }
 
