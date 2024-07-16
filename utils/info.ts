@@ -7,7 +7,6 @@ import { agentABI } from "../abi/agent"
 import { formatEther, zeroAddress } from "viem"
 import { lpStake, nftStake } from "../abi/stake"
 import { erc20Abi } from "../abi/erc20Abi"
-import { input } from "@inquirer/prompts"
 
 export const getERC7527StakeData = async () => {
     const appAddress = await inputAddress("Enter the ERC7527 token contract address: ")
@@ -50,6 +49,44 @@ export const getERC7527StakeData = async () => {
     console.log(`${chalk.blueBright("Stake Reward")} refers to the reward you get when you stake to ${chalk.blueBright("End BlockNumber Of Epoch")}`)
 }
 
+const getL1EndBlock = async () => {
+    const endBlockOfEpoch = await publicClient.readContract({
+        ...nftStake,
+        functionName: "endBlockOfEpoch"
+    })
+    const nowBlockNumber = await publicClient.getBlockNumber()
+
+    if (endBlockOfEpoch > nowBlockNumber) {
+        return { endBlock: nowBlockNumber, isEnd: false }
+    } else {
+        return { endBlock: endBlockOfEpoch, isEnd: true }
+    }
+}
+
+const getRealizedReward = async (
+    lastRewardBlock: bigint, 
+    tokenPerBlock: bigint, 
+    isWrapCoin: boolean, 
+    accTokenPerShare: bigint, 
+    tvlOfTotal: bigint,
+    stakingTvl: bigint,
+    rewardDebt: bigint
+) => {
+    const { endBlock } = await getL1EndBlock()
+    const tokenReward = (endBlock - lastRewardBlock) * tokenPerBlock;
+    let newAccTokenPerShare: bigint
+
+    if (isWrapCoin) {
+        newAccTokenPerShare = accTokenPerShare + tokenReward * BigInt(1e12 * 37 / 40) / tvlOfTotal;
+    } else {
+        newAccTokenPerShare = accTokenPerShare + tokenReward * BigInt(1e12 * 3 / 40) / tvlOfTotal;
+    }
+
+    const reward = (newAccTokenPerShare - rewardDebt) * stakingTvl;
+
+    return reward
+}
+
 export const getDotAgencyEpochReward = async () => {
     const appAddress = await inputAddress("Enter the ERC7527 token contract address: ")
 
@@ -63,7 +100,7 @@ export const getDotAgencyEpochReward = async () => {
     const agencyName = await getAgentName(agencySettings[0])
     const nowBlockNumber = await publicClient.getBlockNumber()
 
-    const [endBlockOfEpoch, tokenPerBlock] = await publicClient.multicall({
+    const [endBlockOfEpoch, tokenPerBlock, lastRewardBlock] = await publicClient.multicall({
         contracts: [
             {
                 ...nftStake,
@@ -72,7 +109,11 @@ export const getDotAgencyEpochReward = async () => {
             {
                 ...nftStake,
                 functionName: "tokenPerBlock"
-            }
+            },
+            {
+                ...nftStake,
+                functionName: "lastRewardBlock"
+            },
         ]
     })
 
@@ -90,7 +131,7 @@ export const getDotAgencyEpochReward = async () => {
             args: [agencyAddress]
         })
 
-        const [tvlOfTotal] = await publicClient.readContract({
+        const [tvlOfTotal, accTokenPerShare] = await publicClient.readContract({
             ...nftStake,
             functionName: "l1StakingOfERC20"
         })
@@ -106,7 +147,7 @@ export const getDotAgencyEpochReward = async () => {
         }
         if (nowBlockNumber < endBlockOfEpoch.result!) {
             endBlockNumberOfEpoch = endBlockOfEpoch.result!
-            epochReward = tokenPerBlock.result! * (endBlockNumberOfEpoch - nowBlockNumber) * BigInt(875) / BigInt(1000) * tvlOfAgency / stakeTVL
+            epochReward = tokenPerBlock.result! * (endBlockNumberOfEpoch - nowBlockNumber) * BigInt(7) / BigInt(8) * tvlOfAgency / stakeTVL
         } else {
             endBlockNumberOfEpoch = nowBlockNumber + BigInt(42000)
 
@@ -119,10 +160,22 @@ export const getDotAgencyEpochReward = async () => {
             epochReward = reawrd / BigInt(100) * BigInt(875) / BigInt(1000)
         }
 
+        const realizedReward = await getRealizedReward(
+            lastRewardBlock.result!,
+            tokenPerBlock.result!,
+            true,
+            accTokenPerShare,
+            tvlOfTotal,
+            stakingData[0],
+            stakingData[4]
+        )
+
         console.log(boxen(`Agency Name: ${chalk.blue(agencyName)}\n`
             + `End BlockNumber Of Epoch: ${chalk.blue(Number(endBlockNumberOfEpoch))}\n`
-            + `DotAgency Reward: ${chalk.blue(formatEther(epochReward * BigInt(8) / BigInt(100)))}\n`
-            + `ERC7527 Reward: ${chalk.blue(formatEther(epochReward * BigInt(9) / BigInt(10)))}\n`
+            + `DotAgency Reward: ${chalk.blue(formatEther(realizedReward * BigInt(5243) / BigInt(1e12 * 65536)))}\n`
+            + `ERC7527 Reward: ${chalk.blue(formatEther(realizedReward * BigInt(58982) / BigInt(1e12 * 65536)))}\n`
+            + `DotAgency Expected Reward: ${chalk.blue(formatEther(epochReward * BigInt(8) / BigInt(100)))}\n`
+            + `ERC7527 Expected Reward: ${chalk.blue(formatEther(epochReward * BigInt(9) / BigInt(10)))}\n`
             + `Epoch All Reward: ${chalk.blue(formatEther(epochReward))}\n`
             + `Agency TVL: ${chalk.blue(formatEther(tvlOfAgency))}\n`
             + `WRAP Stake TVL: ${chalk.blue(formatEther(stakeTVL))}`, { padding: 1 }
@@ -134,7 +187,7 @@ export const getDotAgencyEpochReward = async () => {
             address: agencyAddress
         })
 
-        const [tvlOfTotal] = await publicClient.readContract({
+        const [tvlOfTotal, accTokenPerShare] = await publicClient.readContract({
             ...nftStake,
             functionName: "l1StakingOfETH"
         })
@@ -163,10 +216,22 @@ export const getDotAgencyEpochReward = async () => {
             })
             epochReward = reawrd / BigInt(100) * BigInt(125) / BigInt(1000)
         }
+
+        const realizedReward = await getRealizedReward(
+            lastRewardBlock.result!,
+            tokenPerBlock.result!,
+            false,
+            accTokenPerShare,
+            tvlOfTotal,
+            stakingData[0],
+            stakingData[4]
+        )    
         console.log(boxen(`Agency Name: ${chalk.blue(agencyName)}\n`
             + `End BlockNumber Of Epoch: ${chalk.blue(Number(endBlockNumberOfEpoch))}\n`
-            + `DotAgency Reward: ${chalk.blue(formatEther(epochReward * BigInt(8) / BigInt(100)))}\n`
-            + `ERC7527 Reward: ${chalk.blue(formatEther(epochReward * BigInt(9) / BigInt(10)))}\n`
+            + `DotAgency Reward: ${chalk.blue(formatEther(realizedReward * BigInt(5243) / BigInt(1e12 * 65536)))}\n`
+            + `ERC7527 Reward: ${chalk.blue(formatEther(realizedReward * BigInt(58982) / BigInt(1e12 * 65536)))}\n`
+            + `DotAgency Expected Reward: ${chalk.blue(formatEther(epochReward * BigInt(8) / BigInt(100)))}\n`
+            + `ERC7527 Expected Reward: ${chalk.blue(formatEther(epochReward * BigInt(9) / BigInt(10)))}\n`
             + `Epoch All Reward: ${chalk.blue(formatEther(epochReward))}\n`
             + `Agency TVL: ${chalk.blue(formatEther(tvlOfAgency))}\n`
             + `ETH Stake TVL: ${chalk.blue(formatEther(stakeTVL))}`, { padding: 1 }
