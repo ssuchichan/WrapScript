@@ -51,28 +51,6 @@ const swapLpToToken = async (lp: bigint) => {
     }
 }
 
-export const calculateAgentAPY = async (agentAddress: `0x${string}`, agencyTokenId: bigint, mintPrice: bigint, mintCoin: AgentCoin) => {
-    const { epochReward, epochLength } = await getAgenctEpochReward(agentAddress, agencyTokenId)
-    let apy;
-    let mintWrapPrice;
-    const yearReward = epochReward * BigInt(2628000) / epochLength
-
-    switch (mintCoin) {
-        case AgentCoin.ETH: {
-            mintWrapPrice = await swapETHToWrap(mintPrice)
-            break;
-        }
-        case AgentCoin.WrapCoin: {
-            mintWrapPrice = mintPrice
-            break;
-        }
-    }
-
-    apy = yearReward * BigInt(100) / mintWrapPrice
-
-    console.log(`Year Reward: ${yearReward}\nMint Pirce: ${mintWrapPrice}\nAPY: ${apy}%`)
-}
-
 export const calculateDotAgencyAPY = async () => {
     const [tokenPerBlock, l1StakingOfERC20, l1StakingOfETH] = await publicClient.multicall({
         contracts: [
