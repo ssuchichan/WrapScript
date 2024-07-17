@@ -2,23 +2,27 @@ import { createWalletClient, createPublicClient, http, PublicClient, WalletClien
 import { privateKeyToAccount } from 'viem/accounts'
 import { localhost, mainnet, sepolia } from 'viem/chains'
 import fs from 'fs'
+import { makeVersionSelect } from './utils/display'
 // https://1rpc.io/sepolia
 // 0xEd78bF31CD8E36c628e048D0e47e9a38913d34eF
 export const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`)
+export let wrapVersion = "v3" 
 
 interface tokenIdConfig {
   name: string,
   value: number
 }
 
-interface agencyConfig {
+export interface agencyConfig {
   value: string,
   description: string
+  type: "v2" | "v3"
 }
 
 export interface UserConfig {
+  version: Number,
   tokenId: tokenIdConfig[],
-  agency: agencyConfig[]
+  agency: agencyConfig[],
 }
 
 export const userConfig: UserConfig = JSON.parse(fs.readFileSync('./config.json', 'utf8'))
@@ -84,13 +88,6 @@ export const tokenURIEngineConfig = [
     "value": "0x0" as `0x${string}`,
     "description": "Manually enter the address of TokenURI Engine"
   }
-  // {
-  //   "name": "CCIP Azimuth",
-  //   "value": "0xCCf1FD8F8629c1b5Aa1a8E1F92629637d5ab1a5e" as `0x${string}`,
-  //   "description": "Generate Azimuth through CCIP"
-  // }
 ]
 
-// GDA 0x1f53ad02bdcdef458acd00235cf6b4f20574d903
-// cast send  --value 100gwei --nonce 85 --private-key $PRIVATE_KEY --rpc-url $RPC_URL
-// cast nonce  -r $RPC_URL -B pending
+export const versionSelect = makeVersionSelect();

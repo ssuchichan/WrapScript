@@ -2,6 +2,9 @@ import select from '@inquirer/select'
 import { wrap, unwrap, updateAgenctConfig, setUserTokenURIEngine, createERC6551Account } from './mintDotAgency'
 import chalk from 'chalk'
 import { getResolverBondInCLI, setResolverBondInCLI, setResolverInCLI } from './utils/resolver'
+import { versionSelect } from './config'
+
+await versionSelect.setVersion();
 
 const userSelect = await select({
     message: "Wrap Coin Interaction Selection",
@@ -39,7 +42,6 @@ const userSelect = await select({
     ]
 })
 
-
 const resolverManage = async () => {
     const resolverSelect = await select({
         message: "Wrap Coin Resolver Operation",
@@ -74,6 +76,7 @@ const resolverManage = async () => {
             break
     }
 }
+
 
 switch (userSelect) {
     case "wrap":

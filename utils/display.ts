@@ -1,10 +1,10 @@
 import { exit } from 'node:process';
 import chalk from 'chalk'
 import { isAddress, getAddress, parseEther, toHex, parseUnits } from "viem"
-import { UserConfig, tokenURIEngineConfig } from '../config'
+import { UserConfig, agencyConfig, tokenURIEngineConfig, userConfig, versionSelect } from '../config'
 import { select, input } from '@inquirer/prompts';
 import fs from 'fs'
-import { getAgencyStrategy, isApproveOrOwner } from './data';
+import { getAgencyStrategy, getAgencyVersion, isApproveOrOwner } from './data';
 
 export const displayNotFundAndExit = (price: bigint, balance: bigint) => {
     if (balance < price) {
@@ -40,26 +40,49 @@ export const inputMoreThanMinimumValue = async (message: string) => {
     return feePercent
 }
 
+const mergeType = async (userConfig: UserConfig) => {
+    if (userConfig.version === undefined) {
+        const agency: agencyConfig[] = []
+        const promises = userConfig.agency.map(async (item) => {
+            const version = await getAgencyVersion(item.value as `0x${string}`);
+            agency.push({ value: item.value, description: item.description, type: version });
+        })
+        
+        await Promise.all(promises);
+        userConfig.version = 2
+        userConfig.agency = agency
+
+        fs.writeFileSync('config.json', JSON.stringify(userConfig))
+        return userConfig
+    } else {
+        return userConfig
+    }
+}
+
 export const selectWrapAddress = async (userConfig: UserConfig) => {
-    let address: string;
-    if (userConfig.agency.length === 0) {
+    const version = versionSelect.getVersion()
+    let address: `0x${string}`;
+    const userConfigMerge = await mergeType(userConfig)
+
+    if (userConfigMerge.agency.length === 0) {
         const description = await input({ message: 'Enter Your Agency Name:' })
         address = await inputAddress('Enter Your Agency Address:')
-        updateConfig(userConfig, undefined, { value: address, description: description })
+        const version = await getAgencyVersion(address)
+        updateConfig(userConfigMerge, undefined, { value: address, description: description, type: version })
     } else {
         address = await select({
             message: "Select Your Agency Address",
-            choices: userConfig.agency.map(({ value, description }) => {
+            choices: userConfigMerge.agency.filter((item) => item.type == version).map(({ value, description }) => {
                 return {
                     name: value,
                     description: description,
                     value: value
                 }
             })
-        })
+        }) as `0x${string}`
     }
 
-    return address as `0x${string}`
+    return address
 }
 
 export const selectDotAgency = async (userConfig: UserConfig) => {
@@ -134,7 +157,7 @@ export const selectOrInputTokenURIEngineAddress = async () => {
     return tokenURIEngineAddress
 }
 
-const updateConfig = async (userConfig: UserConfig, tokenId?: { name: string, value: number }, agency?: { value: string, description: string }) => {
+const updateConfig = async (userConfig: UserConfig, tokenId?: { name: string, value: number }, agency?: { value: string, description: string, type: "v2" | "v3" }) => {
     if (tokenId) {
         userConfig.tokenId.push(tokenId)
     }
@@ -157,3 +180,31 @@ export const getExtraAgencyConfig = async (agencyImplementation: `0x${string}`) 
             return "0x" as `0x${string}`
     }
 }
+
+export const makeVersionSelect = () => {
+    let version: "v2" | "v3" = "v3"
+
+    const setVersion = async () => {
+        version = await select({
+            message: "Wrap Coin Agency Version Selection",
+            choices: [
+                {
+                    name: "V3",
+                    value: "v3"
+                },
+                {
+                    name: "V2",
+                    value: "v2"
+                }
+            ]
+        })
+    }
+
+    const getVersion = () => {
+        return version
+    }
+
+    return {
+        setVersion, getVersion
+    }
+} 

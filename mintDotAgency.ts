@@ -6,7 +6,7 @@ import { agentABI } from './abi/agent'
 import { erc6551AccountABI, erc6551Implementation, erc6551RegistryABI } from './abi/erc6551'
 import { concat, encodeAbiParameters, formatEther, getAddress, getFunctionSelector, keccak256, toHex, parseAbi, encodeFunctionData, formatUnits, parseUnits, encodePacked, hexToString } from "viem"
 import { confirm } from '@inquirer/prompts';
-import { displayNotFundAndExit, inputAddress, selectWrapAddress, selectTokenId, inputETHNumber, inputMoreThanMinimumValue, chooseAgencyNFTWithTokenId, getExtraAgencyConfig, selectDotAgency, inputTokenNumber, selectOrInputTokenURIEngineAddress } from './utils/display'
+import { displayNotFundAndExit, inputAddress, selectWrapAddress, selectTokenId, inputETHNumber, inputMoreThanMinimumValue, chooseAgencyNFTWithTokenId, getExtraAgencyConfig, selectDotAgency, inputTokenNumber, selectOrInputTokenURIEngineAddress, makeVersionSelect } from './utils/display'
 import { exit } from 'node:process';
 import input from '@inquirer/input';
 import select from '@inquirer/select'
@@ -14,7 +14,7 @@ import fs from 'fs'
 import chalk from 'chalk'
 import boxen from 'boxen'
 import { sleep } from "bun"
-import { getAgencyStrategy, getAgentName, getDotAgencyERC6551AddressByTokenID, getERC20Approve, getTokenBaseInfo, isApproveOrOwner } from "./utils/data"
+import { getAgencyStrategy, getAgencyVersion, getAgentName, getDotAgencyERC6551AddressByTokenID, getERC20Approve, getTokenBaseInfo, isApproveOrOwner } from "./utils/data"
 import { existAgentName } from "./utils/resolver"
 import { WrapClaim } from "./abi/wrapClaim"
 import { erc20Abi } from "./abi/erc20Abi"
@@ -265,6 +265,7 @@ export const updateAgenctConfig = async () => {
 
     const agencyName = await getAgentName(agencySettings[0])
     const agentMaxSupply = await getAgentMaxSupply(agencySettings[0])
+    const agencyType = await getAgencyVersion(agencyAddress)
 
     console.log(boxen(`Agency Name: ${chalk.blue(agencyName)}\n`
         + `Currency: ${chalk.blue(tokenName)}\n`
@@ -272,13 +273,13 @@ export const updateAgenctConfig = async () => {
         + `Base Premium: ${chalk.blue(agencySettings[1].basePremium.toString(10))}\n`
         + `Mint Fee Percent: 5%\n`
         + `Burn Fee Percent: 5%\n`
-        + `Max Supply: ${chalk.blue(agentMaxSupply === BigInt(0) ? 'Unlimited' : agentMaxSupply)}`, { padding: 1 }))
+        + `Max Supply: ${chalk.blue(agentMaxSupply === BigInt(0) ? 'Unlimited' : agentMaxSupply)}\n`
+        + `Type: ${chalk.blue(agencyType)}`, { padding: 1 }))
     console.log(`ERC7527 App Address: ${agencySettings[0]}`)
     console.log(`ERC7527 Agency Address: ${agencyAddress}`)
     const answer = await confirm({ message: 'Continue Update Agency Config?' })
-
     if (answer) {
-        updateConfig(undefined, { value: agencyAddress, description: agencyName })
+        updateConfig(undefined, { value: agencyAddress, description: agencyName, type: agencyType })
     } else {
         exit()
     }
@@ -334,7 +335,7 @@ const normalName = (name: string) => {
   return regex.test(name);
 }
 
-const updateConfig = async (tokenId?: { name: string, value: number }, agency?: { value: string, description: string }) => {
+const updateConfig = async (tokenId?: { name: string, value: number }, agency?: { value: string, description: string, type: "v2" | "v3" }) => {
     if (tokenId) {
         userConfig.tokenId.push(tokenId)
     }
@@ -548,7 +549,7 @@ const deployAgencyAndApp = async (
     console.log(`Agency Address: ${chalk.blue(result)}`)
     const deployHash = await walletClient.writeContract(request)
     const tokenName = userConfig.tokenId.find(({ value }) => value === tokenId)!.name
-    updateConfig(undefined, { value: result, description: tokenName })
+    updateConfig(undefined, { value: result, description: tokenName, type: 'v3' })
     console.log(`Deploy Agency Hash: ${chalk.blue(deployHash)}`)
 }
 

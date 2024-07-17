@@ -5,7 +5,7 @@ import { erc20Abi } from "../abi/erc20Abi"
 import { erc6551Implementation, erc6551RegistryABI } from "../abi/erc6551"
 import { account, publicClient } from "../config"
 import { nftStake } from "../abi/stake"
-
+import { wrapFactory } from "../abi/factory"
 
 export const getAgencyStrategy = async (agencyAddress: `0x${string}`) => {
     const agencyStrategy = await publicClient.readContract({
@@ -152,14 +152,30 @@ export const getAgentBaseInfo = async (agentAddress: `0x${string}`) => {
     }
 }
 
-export const getAgentEpochReward = async (agentAddress: `0x${string}`, agencyTokenId: bigint) => {
+export const getAgencyVersion = async (agencyAddress: `0x${string}`) => {
+    const agencyTokenId = await publicClient.readContract({
+        address: agencyAddress,
+        abi: agencyABI,
+        functionName: "tokenIdOfDotAgency"
+    })
 
+    const agencyImpl = await publicClient.readContract({
+        ...wrapFactory,
+        functionName: "agency",
+        args: [agencyAddress, agencyTokenId]
+    })
+    
+    let version: "v2" | "v3"
 
-
-    if (agentInfo.points == BigInt(0)) {
-        return 0
+    if (agencyImpl == "0x120E8cC16D6Bd9BCc4E94609D668F96aB8BAA3D9") {
+        version = "v2"
+    } else if (agencyImpl == "0x78B979DDb11716e7af784edb970348f9584a5a12") {
+        version = "v3"
+    } else {
+        version = "v3"
     }
-    const reward = (agentInfo.endBlockOfEpoch - agentInfo.lastRewardBlock) * agentInfo.tokenPerBlock / agentInfo.points;
 
-    return formatEther(reward / BigInt(1e12))
+    return version
 }
+
+// console.log(await getAgencyVersion("0xa55E3Ea7F5E0F4a7CB0dbc2C733D2fe2a5eDcBc4"))

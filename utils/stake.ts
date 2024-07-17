@@ -1,6 +1,6 @@
 import { lpStake, nftStake } from "../abi/stake"
 import { agencyABI } from "../abi/agency"
-import { account, walletClient, publicClient, userConfig, WrapCoinAddress, uniswapV2Pair } from "../config"
+import { account, walletClient, publicClient, userConfig, WrapCoinAddress, uniswapV2Pair, versionSelect } from "../config"
 import { chooseAgencyNFTWithTokenId, displayConfirmAndExit, inputETHNumber, selectWrapAddress } from './display'
 import select from '@inquirer/select'
 import chalk from 'chalk'
@@ -514,6 +514,7 @@ export const stakeSelect = async () => {
 
     switch (selectStake) {
         case "stakeNFT":
+            await versionSelect.setVersion();
             await nftStakeStep()
             break
 
