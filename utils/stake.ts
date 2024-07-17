@@ -4,7 +4,7 @@ import { account, walletClient, publicClient, userConfig, WrapCoinAddress, unisw
 import { chooseAgencyNFTWithTokenId, displayConfirmAndExit, inputETHNumber, selectWrapAddress } from './display'
 import select from '@inquirer/select'
 import chalk from 'chalk'
-import { getAgencyStrategy, getAgentERC6551AddressByTokenID, getERC20Approve } from "./data"
+import { getAgencyStrategy, getAgentBaseInfo, getAgentERC6551AddressByTokenID, getDotAgencyRealizedReward, getERC20Approve } from "./data"
 import { formatEther, formatUnits } from "viem"
 import { erc20Abi } from "../abi/erc20Abi"
 import { sleep } from "bun"
@@ -244,11 +244,39 @@ const claimDotAgencyReward = async () => {
         functionName: "claimForDotAgencyAccount",
         args: [tokenIdOfDotAgency]
     })
+    
+    const { realizedReward, endBlockOfEpoch, appAddress } = await getDotAgencyRealizedReward(agencyAddress)
 
-    console.log(`Claim Reward: ${chalk.blue(formatUnits(reward, 30))} WRAP`)
+    const nowBlockNumber = await publicClient.getBlockNumber()
+    if (nowBlockNumber < endBlockOfEpoch) {
+        console.log(`When the block height reaches ${chalk.blue(endBlockOfEpoch)}, dotAgency will receive ${chalk.blue(realizedReward)} WRAP`)
 
-    displayConfirmAndExit("Continue to Claim .Agency reward?")
+        console.log(`Claim Reward: ${chalk.blue(formatUnits(reward, 30))} WRAP`)
 
+        displayConfirmAndExit("Continue to Claim .Agency reward?")
+    } else {
+        console.log(`Claim Reward: ${chalk.blue(realizedReward)} WRAP`)
+        const { request } = await publicClient.simulateContract({
+            account,
+            abi: nftStake.abi,
+            address: nftStake.address,
+            functionName: "updateRewardL1",
+            args: [
+                appAddress
+            ]
+        })
+
+        const updateRewardL1Hash = await walletClient.writeContract(request)
+        console.log(`Update Reward L1 Hash: ${chalk.blue(updateRewardL1Hash)}`)
+
+        let newEndBlockOfEpoch = (await getAgentBaseInfo(appAddress)).endBlockOfEpoch
+
+        while (newEndBlockOfEpoch < nowBlockNumber) {
+            newEndBlockOfEpoch = (await getAgentBaseInfo(appAddress)).endBlockOfEpoch
+            await sleep(12)
+        }
+    }
+    
     const { request } = await publicClient.simulateContract({
         account,
         abi: nftStake.abi,

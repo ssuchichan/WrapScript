@@ -6,6 +6,7 @@ import { erc6551Implementation, erc6551RegistryABI } from "../abi/erc6551"
 import { account, publicClient } from "../config"
 import { nftStake } from "../abi/stake"
 import { wrapFactory } from "../abi/factory"
+import { fantomSonicTestnet } from "viem/chains"
 
 export const getAgencyStrategy = async (agencyAddress: `0x${string}`) => {
     const agencyStrategy = await publicClient.readContract({
@@ -143,12 +144,14 @@ export const getAgentBaseInfo = async (agentAddress: `0x${string}`) => {
     })
 
     return {
+        tvl: agentBaseInfo[0],
         accTokenPerShare: agentBaseInfo[3], 
         points: agentBaseInfo[1], 
         lastRewardBlock: agentBaseInfo[2],
         tokenPerBlock: agentBaseInfo[5],
         endBlockOfEpoch: agentBaseInfo[7],
-        unspentRewards: agentBaseInfo[6]
+        unspentRewards: agentBaseInfo[6],
+        rewardDebt: agentBaseInfo[4]
     }
 }
 
@@ -164,7 +167,7 @@ export const getAgencyVersion = async (agencyAddress: `0x${string}`) => {
         functionName: "agency",
         args: [agencyAddress, agencyTokenId]
     })
-    
+
     let version: "v2" | "v3"
 
     if (agencyImpl == "0x120E8cC16D6Bd9BCc4E94609D668F96aB8BAA3D9") {
@@ -178,4 +181,97 @@ export const getAgencyVersion = async (agencyAddress: `0x${string}`) => {
     return version
 }
 
+const getL1EndBlock = async () => {
+    const endBlockOfEpoch = await publicClient.readContract({
+        ...nftStake,
+        functionName: "endBlockOfEpoch"
+    })
+    const nowBlockNumber = await publicClient.getBlockNumber()
+
+    if (endBlockOfEpoch > nowBlockNumber) {
+        return { endBlock: nowBlockNumber, isEnd: false }
+    } else {
+        return { endBlock: endBlockOfEpoch, isEnd: true }
+    }
+}
+
+export const getRealizedReward = async (
+    lastRewardBlock: bigint, 
+    tokenPerBlock: bigint, 
+    isWrapCoin: boolean, 
+    accTokenPerShare: bigint, 
+    tvlOfTotal: bigint,
+    stakingTvl: bigint,
+    rewardDebt: bigint
+) => {
+    const { endBlock } = await getL1EndBlock()
+    const tokenReward = (endBlock - lastRewardBlock) * tokenPerBlock;
+    let newAccTokenPerShare: bigint
+
+    if (isWrapCoin) {
+        newAccTokenPerShare = accTokenPerShare + tokenReward * BigInt(1e12 * 37 / 40) / tvlOfTotal;
+    } else {
+        newAccTokenPerShare = accTokenPerShare + tokenReward * BigInt(1e12 * 3 / 40) / tvlOfTotal;
+    }
+
+    const reward = (newAccTokenPerShare - rewardDebt) * stakingTvl;
+
+    return reward
+}
+
+export const getDotAgencyRealizedReward = async (agencyAddress: `0x${string}`) => {
+    let realizedReward: bigint;
+    const [appAddress, settingData] = await getAgencyStrategy(agencyAddress)
+    const stakeData = await getAgentBaseInfo(appAddress)
+
+    const [tokenPerBlock, lastRewardBlock] = await publicClient.multicall({
+        contracts: [
+            {
+                ...nftStake,
+                functionName: "tokenPerBlock"
+            },
+            {
+                ...nftStake,
+                functionName: "lastRewardBlock"
+            },
+        ]
+    })
+    if (settingData.currency === "0x0000000000000000000000000000000000000000") {
+        const [tvlOfTotal, accTokenPerShare] = await publicClient.readContract({
+            ...nftStake,
+            functionName: "l1StakingOfETH"
+        })
+
+        realizedReward = (await getRealizedReward(
+            lastRewardBlock.result!,
+            tokenPerBlock.result!,
+            false,
+            accTokenPerShare,
+            tvlOfTotal,
+            stakeData.tvl,
+            stakeData.rewardDebt
+        ) + stakeData.unspentRewards) * BigInt(5243) / BigInt(1e12 * 65536)
+    } else {
+        const [tvlOfTotal, accTokenPerShare] = await publicClient.readContract({
+            ...nftStake,
+            functionName: "l1StakingOfERC20"
+        })
+
+        realizedReward = (await getRealizedReward(
+            lastRewardBlock.result!,
+            tokenPerBlock.result!,
+            true,
+            accTokenPerShare,
+            tvlOfTotal,
+            stakeData.tvl,
+            stakeData.rewardDebt
+        ) + stakeData.unspentRewards) * BigInt(5243) / BigInt(1e12 * 65536)
+    }
+
+    return {
+        realizedReward: formatEther(realizedReward),
+        endBlockOfEpoch: stakeData.endBlockOfEpoch,
+        appAddress
+    }
+}
 // console.log(await getAgencyVersion("0xa55E3Ea7F5E0F4a7CB0dbc2C733D2fe2a5eDcBc4"))

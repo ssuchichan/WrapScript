@@ -1,6 +1,6 @@
 import boxen from "boxen"
 import chalk from 'chalk'
-import { getAgencyStrategy, getAgentBaseInfo, getAgentName } from "./data"
+import { getAgencyStrategy, getAgentBaseInfo, getAgentName, getRealizedReward } from "./data"
 import { inputAddress } from "./display"
 import { publicClient, WrapCoinAddress } from "../config"
 import { agentABI } from "../abi/agent"
@@ -47,44 +47,6 @@ export const getERC7527StakeData = async () => {
     }
 
     console.log(`${chalk.blueBright("Stake Reward")} refers to the reward you get when you stake to ${chalk.blueBright("End BlockNumber Of Epoch")}`)
-}
-
-const getL1EndBlock = async () => {
-    const endBlockOfEpoch = await publicClient.readContract({
-        ...nftStake,
-        functionName: "endBlockOfEpoch"
-    })
-    const nowBlockNumber = await publicClient.getBlockNumber()
-
-    if (endBlockOfEpoch > nowBlockNumber) {
-        return { endBlock: nowBlockNumber, isEnd: false }
-    } else {
-        return { endBlock: endBlockOfEpoch, isEnd: true }
-    }
-}
-
-const getRealizedReward = async (
-    lastRewardBlock: bigint, 
-    tokenPerBlock: bigint, 
-    isWrapCoin: boolean, 
-    accTokenPerShare: bigint, 
-    tvlOfTotal: bigint,
-    stakingTvl: bigint,
-    rewardDebt: bigint
-) => {
-    const { endBlock } = await getL1EndBlock()
-    const tokenReward = (endBlock - lastRewardBlock) * tokenPerBlock;
-    let newAccTokenPerShare: bigint
-
-    if (isWrapCoin) {
-        newAccTokenPerShare = accTokenPerShare + tokenReward * BigInt(1e12 * 37 / 40) / tvlOfTotal;
-    } else {
-        newAccTokenPerShare = accTokenPerShare + tokenReward * BigInt(1e12 * 3 / 40) / tvlOfTotal;
-    }
-
-    const reward = (newAccTokenPerShare - rewardDebt) * stakingTvl;
-
-    return reward
 }
 
 export const getDotAgencyEpochReward = async () => {
@@ -172,8 +134,8 @@ export const getDotAgencyEpochReward = async () => {
 
         console.log(boxen(`Agency Name: ${chalk.blue(agencyName)}\n`
             + `End BlockNumber Of Epoch: ${chalk.blue(Number(endBlockNumberOfEpoch))}\n`
-            + `DotAgency Reward: ${chalk.blue(formatEther(realizedReward * BigInt(5243) / BigInt(1e12 * 65536)))}\n`
-            + `ERC7527 Reward: ${chalk.blue(formatEther(realizedReward * BigInt(58982) / BigInt(1e12 * 65536)))}\n`
+            + `DotAgency Reward: ${chalk.blue(formatEther((realizedReward + stakingData[6]) * BigInt(5243)/ BigInt(1e12 * 65536)))}\n`
+            + `ERC7527 Reward: ${chalk.blue(formatEther((realizedReward + stakingData[6]) * BigInt(58982) / BigInt(1e12 * 65536)))}\n`
             + `DotAgency Expected Reward: ${chalk.blue(formatEther(epochReward * BigInt(8) / BigInt(100)))}\n`
             + `ERC7527 Expected Reward: ${chalk.blue(formatEther(epochReward * BigInt(9) / BigInt(10)))}\n`
             + `Epoch All Reward: ${chalk.blue(formatEther(epochReward))}\n`
@@ -228,8 +190,8 @@ export const getDotAgencyEpochReward = async () => {
         )    
         console.log(boxen(`Agency Name: ${chalk.blue(agencyName)}\n`
             + `End BlockNumber Of Epoch: ${chalk.blue(Number(endBlockNumberOfEpoch))}\n`
-            + `DotAgency Reward: ${chalk.blue(formatEther(realizedReward * BigInt(5243) / BigInt(1e12 * 65536)))}\n`
-            + `ERC7527 Reward: ${chalk.blue(formatEther(realizedReward * BigInt(58982) / BigInt(1e12 * 65536)))}\n`
+            + `DotAgency Reward: ${chalk.blue(formatEther((realizedReward + stakingData[6]) * BigInt(5243)/ BigInt(1e12 * 65536)))}\n`
+            + `ERC7527 Reward: ${chalk.blue(formatEther((realizedReward + stakingData[6]) * BigInt(58982) / BigInt(1e12 * 65536)))}\n`
             + `DotAgency Expected Reward: ${chalk.blue(formatEther(epochReward * BigInt(8) / BigInt(100)))}\n`
             + `ERC7527 Expected Reward: ${chalk.blue(formatEther(epochReward * BigInt(9) / BigInt(10)))}\n`
             + `Epoch All Reward: ${chalk.blue(formatEther(epochReward))}\n`
