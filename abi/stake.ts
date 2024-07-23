@@ -1281,7 +1281,7 @@ export const nftStake = {
 } as const;
 
 export const nftStakeV2 = {
-    address: "0x89EB45962E758E7603cfd843f1B563b97cB84dA8",
+    address: "0x95f6541c3CBD9bde97361441f6678A246C231Ca6",
     abi: nftStakeABI
 }
 

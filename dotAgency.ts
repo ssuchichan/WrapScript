@@ -78,7 +78,7 @@ switch (userSelect) {
 
     case "approvePush":
         await versionSelect.setVersion()
-        const stakeAddressConfig = "0x89EB45962E758E7603cfd843f1B563b97cB84dA8"
+        const stakeAddressConfig = "0x95f6541c3CBD9bde97361441f6678A246C231Ca6"
         await approvePush(stakeAddressConfig)
         break;
     
