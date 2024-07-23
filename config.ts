@@ -31,14 +31,14 @@ export const rpcUrl = process.env.RPC_URL
 export const walletClient: WalletClient = createWalletClient({
   account,
   chain: mainnet,
-  // transport: http(rpcUrl)
-  transport: http("http://127.0.0.1:8545")
+  transport: http(rpcUrl)
+  // transport: http("http://127.0.0.1:8545")
 })
 // console.log(`Account Address: ${account.address}`)
 export const publicClient: PublicClient = createPublicClient({
   chain: mainnet,
-  // transport: http(rpcUrl)
-  transport: http("http://127.0.0.1:8545")
+  transport: http(rpcUrl)
+  // transport: http("http://127.0.0.1:8545")
 }) as PublicClient;
 
 export const agencyAndAppConfig = [
