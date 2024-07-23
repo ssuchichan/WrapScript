@@ -4,7 +4,7 @@ import { dotAgency } from "../abi/dotAgency"
 import { erc20Abi } from "../abi/erc20Abi"
 import { erc6551Implementation, erc6551RegistryABI } from "../abi/erc6551"
 import { account, publicClient } from "../config"
-import { nftStake } from "../abi/stake"
+import { nftStakeABI } from "../abi/stake"
 import { wrapFactory } from "../abi/factory"
 import { fantomSonicTestnet } from "viem/chains"
 
@@ -136,9 +136,10 @@ export const getAgentName = async (agentAddress: `0x${string}`) => {
     return agentName
 }
 
-export const getAgentBaseInfo = async (agentAddress: `0x${string}`) => {
+export const getAgentBaseInfo = async (agentAddress: `0x${string}`, stakeAddress: `0x${string}`) => {
     const agentBaseInfo = await publicClient.readContract({
-        ...nftStake,
+        address: stakeAddress,
+        abi: nftStakeABI,
         functionName: "stakingOfNFT",
         args: [agentAddress]
     })
@@ -181,9 +182,10 @@ export const getAgencyVersion = async (agencyAddress: `0x${string}`) => {
     return version
 }
 
-const getL1EndBlock = async () => {
+const getL1EndBlock = async (stakeAddress: `0x${string}`) => {
     const endBlockOfEpoch = await publicClient.readContract({
-        ...nftStake,
+        address: stakeAddress,
+        abi: nftStakeABI,
         functionName: "endBlockOfEpoch"
     })
     const nowBlockNumber = await publicClient.getBlockNumber()
@@ -196,6 +198,7 @@ const getL1EndBlock = async () => {
 }
 
 export const getRealizedReward = async (
+    stakeAddress: `0x${string}`,
     lastRewardBlock: bigint, 
     tokenPerBlock: bigint, 
     isWrapCoin: boolean, 
@@ -204,7 +207,7 @@ export const getRealizedReward = async (
     stakingTvl: bigint,
     rewardDebt: bigint
 ) => {
-    const { endBlock } = await getL1EndBlock()
+    const { endBlock } = await getL1EndBlock(stakeAddress)
     const tokenReward = (endBlock - lastRewardBlock) * tokenPerBlock;
     let newAccTokenPerShare: bigint
 
@@ -219,30 +222,34 @@ export const getRealizedReward = async (
     return reward
 }
 
-export const getDotAgencyRealizedReward = async (agencyAddress: `0x${string}`) => {
+export const getDotAgencyRealizedReward = async (agencyAddress: `0x${string}`, stakeAddress: `0x${string}`) => {
     let realizedReward: bigint;
     const [appAddress, settingData] = await getAgencyStrategy(agencyAddress)
-    const stakeData = await getAgentBaseInfo(appAddress)
+    const stakeData = await getAgentBaseInfo(appAddress, stakeAddress)
 
     const [tokenPerBlock, lastRewardBlock] = await publicClient.multicall({
         contracts: [
             {
-                ...nftStake,
+                address: stakeAddress,
+                abi: nftStakeABI,
                 functionName: "tokenPerBlock"
             },
             {
-                ...nftStake,
+                address: stakeAddress,
+                abi: nftStakeABI,
                 functionName: "lastRewardBlock"
             },
         ]
     })
     if (settingData.currency === "0x0000000000000000000000000000000000000000") {
         const [tvlOfTotal, accTokenPerShare] = await publicClient.readContract({
-            ...nftStake,
+            address: stakeAddress,
+            abi: nftStakeABI,
             functionName: "l1StakingOfETH"
         })
 
         realizedReward = (await getRealizedReward(
+            stakeAddress,
             lastRewardBlock.result!,
             tokenPerBlock.result!,
             false,
@@ -253,11 +260,13 @@ export const getDotAgencyRealizedReward = async (agencyAddress: `0x${string}`) =
         ) + stakeData.unspentRewards) * BigInt(5243) / BigInt(1e12 * 65536)
     } else {
         const [tvlOfTotal, accTokenPerShare] = await publicClient.readContract({
-            ...nftStake,
+            address: stakeAddress,
+            abi: nftStakeABI,
             functionName: "l1StakingOfERC20"
         })
 
         realizedReward = (await getRealizedReward(
+            stakeAddress,
             lastRewardBlock.result!,
             tokenPerBlock.result!,
             true,

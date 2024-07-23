@@ -1,15 +1,15 @@
-import { lpStake, nftStake } from "../abi/stake"
+import { lpStake, nftStakeABI } from "../abi/stake"
 import { agencyABI } from "../abi/agency"
-import { account, walletClient, publicClient, userConfig, WrapCoinAddress, uniswapV2Pair, versionSelect } from "../config"
+import { account, walletClient, publicClient, userConfig, WrapCoinAddress, uniswapV2Pair, versionSelect, stakeVersionSelect } from "../config"
 import { chooseAgencyNFTWithTokenId, displayConfirmAndExit, inputETHNumber, selectWrapAddress } from './display'
 import select from '@inquirer/select'
 import chalk from 'chalk'
 import { getAgencyStrategy, getAgentBaseInfo, getAgentERC6551AddressByTokenID, getDotAgencyRealizedReward, getERC20Approve } from "./data"
-import { formatEther, formatUnits } from "viem"
+import { Abi, Chain, SimulateContractParameters, formatEther, formatUnits, Address } from "viem"
 import { erc20Abi } from "../abi/erc20Abi"
 import { sleep } from "bun"
 
-export const approvePush = async () => {
+export const approvePush = async (stakeAddress: `0x${string}`) => {
     const agencyAddress = await selectWrapAddress(userConfig)
 
     const { request } = await publicClient.simulateContract({
@@ -19,7 +19,7 @@ export const approvePush = async () => {
         functionName: "forceApprove",
         args: [
             "0x3c6e2f22",
-            nftStake.address
+            stakeAddress
         ]
     })
 
@@ -28,27 +28,27 @@ export const approvePush = async () => {
     console.log(`Push Config Hash: ${chalk.blue(forceApproveHash)}`)
 }
 
-const stakeAgencyNFT = async () => {
+const stakeAgencyNFT = async (stakeAddress: `0x${string}`) => {
     const agencySelectConfig = await chooseAgencyNFTWithTokenId(userConfig)
-
+    
     const { request } = await publicClient.simulateContract({
         account,
-        abi: nftStake.abi,
-        address: nftStake.address,
+        address: stakeAddress,
+        abi: nftStakeABI,
         functionName: "stake",
         args: [
             agencySelectConfig.agencyStrategy[0], agencySelectConfig.agencyTokenId
         ]
     })
-
     const stakeHash = await walletClient.writeContract(request)
 
     console.log(`Stake NFT Hash: ${chalk.blue(stakeHash)}`)
 }
 
-const getL1EndBlock = async () => {
+const getL1EndBlock = async (stakeAddress: `0x${string}`) => {
     const endBlockOfEpoch = await publicClient.readContract({
-        ...nftStake,
+        address: stakeAddress,
+        abi: nftStakeABI,
         functionName: "endBlockOfEpoch"
     })
     const nowBlockNumber = await publicClient.getBlockNumber()
@@ -60,8 +60,8 @@ const getL1EndBlock = async () => {
     }
 }
 
-const updatePoolL1 = async () => {
-    const { isEnd } = await getL1EndBlock()
+const updatePoolL1 = async (stakeAddress: `0x${string}`) => {
+    const { isEnd } = await getL1EndBlock(stakeAddress)
     if (!isEnd) {
         console.log("In Epoch...")
     } else {
@@ -69,8 +69,8 @@ const updatePoolL1 = async () => {
         // console.log("Not In Epoch")
         const { request } = await publicClient.simulateContract({
             account,
-            abi: nftStake.abi,
-            address: nftStake.address,
+            abi: nftStakeABI,
+            address: stakeAddress,
             functionName: "updatePoolL1",
         })
 
@@ -79,63 +79,16 @@ const updatePoolL1 = async () => {
     }
 }
 
-const withdrawL1Reward = async () => {
+const withdrawL1Reward = async (stakeAddress: `0x${string}`) => {
     const agencyAddress = await selectWrapAddress(userConfig)
     const agencyStrategy = await getAgencyStrategy(agencyAddress)
-    // const { endBlock } = await getL1EndBlock()
-    // let baseInfo;
-    // let accTokenPerShare: bigint;
-
-    // const lastRewardBlockWithtokenPerBlock = await publicClient.multicall({
-    //     contracts: [
-    //         {
-    //             ...nftStake,
-    //             functionName: "lastRewardBlock"
-    //         },
-    //         {
-    //             ...nftStake,
-    //             functionName: "tokenPerBlock"
-    //         }
-    //     ]
-    // })
-
-    // if (agencyStrategy[1].currency == WrapCoinAddress) {
-    //     baseInfo = await publicClient.readContract({
-    //         ...nftStake,
-    //         functionName: "l1StakingOfERC20"
-    //     })
-    // } else {
-    //     baseInfo = await publicClient.readContract({
-    //         ...nftStake,
-    //         functionName: "l1StakingOfETH"
-    //     })
-    // }
-
-    // const l2StakingData = await publicClient.readContract({
-    //     ...nftStake,
-    //     functionName: "stakingOfNFT",
-    //     args: [agencyStrategy[0]]
-    // })
-
-    // const tokenReward = (endBlock - lastRewardBlockWithtokenPerBlock[0].result!) * lastRewardBlockWithtokenPerBlock[1].result!;
-    // // console.log(baseInfo)
-    // // baseInfo [tvlOfTotal accTokenPerShare tokenReward]
-    // if (agencyStrategy[1].currency == WrapCoinAddress) {
-    //     accTokenPerShare = baseInfo[1] + tokenReward * BigInt(1e12 * 37 / 40) / BigInt(baseInfo[0]);
-    // } else {
-    //     accTokenPerShare = baseInfo[1] + tokenReward * BigInt(1e12 * 3 / 40) / BigInt(baseInfo[0]);
-    // }
-    
-    // const reward = (accTokenPerShare - l2StakingData[4]) * l2StakingData[0];
-
-    // console.log(`Withdraw L1 Reward: ${chalk.blue(formatEther(reward * BigInt(5243) / BigInt(1e12 * 65536)))}`)
 
     displayConfirmAndExit("Continue to update L1 reward?")
 
     const { request } = await publicClient.simulateContract({
         account,
-        abi: nftStake.abi,
-        address: nftStake.address,
+        abi: nftStakeABI,
+        address: stakeAddress,
         functionName: "updateRewardL1",
         args: [
             agencyStrategy[0]
@@ -146,13 +99,14 @@ const withdrawL1Reward = async () => {
     console.log(`Update Reward L1 Hash: ${chalk.blue(updateRewardL1Hash)}`)
 }
 
-const updatePoolL2 = async () => {
+const updatePoolL2 = async (stakeAddress: `0x${string}`) => {
     const agencyAddress = await selectWrapAddress(userConfig)
     const agencyStrategy = await getAgencyStrategy(agencyAddress)
     const nowBlockNumber = await publicClient.getBlockNumber()
 
     const l2StakingData = await publicClient.readContract({
-        ...nftStake,
+        address: stakeAddress,
+        abi: nftStakeABI,
         functionName: "stakingOfNFT",
         args: [agencyStrategy[0]]
     })
@@ -162,8 +116,8 @@ const updatePoolL2 = async () => {
     } else {
         const { request } = await publicClient.simulateContract({
             account,
-            abi: nftStake.abi,
-            address: nftStake.address,
+            address: stakeAddress,
+            abi: nftStakeABI,
             functionName: "updatePoolL2",
             args: [
                 agencyStrategy[0]
@@ -176,13 +130,14 @@ const updatePoolL2 = async () => {
     }
 }
 
-const withdrawReward = async () => {
+const withdrawReward = async (stakeAddress:  `0x${string}`) => {
     const { agencyTokenId, agencyStrategy } = await chooseAgencyNFTWithTokenId(userConfig)
     // const agentERC6551Address = await getAgentERC6551AddressByTokenID(agencyStrategy[0], agencyTokenId)
     // console.log(`Agent ERC6551 Address: ${chalk.blue(agentERC6551Address)}`)
 
     const reward = await publicClient.readContract({
-        ...nftStake,
+        address: stakeAddress,
+        abi: nftStakeABI,
         functionName: "pendingRewards",
         args: [
             agencyStrategy[0],
@@ -196,8 +151,8 @@ const withdrawReward = async () => {
 
     const { request } = await publicClient.simulateContract({
         account,
-        abi: nftStake.abi,
-        address: nftStake.address,
+        address: stakeAddress,
+        abi: nftStakeABI,
         functionName: "withdrawReward",
         args: [
             agencyStrategy[0],
@@ -210,15 +165,15 @@ const withdrawReward = async () => {
     console.log(`Withdraw Reward Hash: ${chalk.blue(withdrawRewardHash)}`)
 }
 
-const unstakeAgencyNFT = async () => {
+const unstakeAgencyNFT = async (stakeAddress: `0x${string}`) => {
     const { agencyTokenId, agencyStrategy } = await chooseAgencyNFTWithTokenId(userConfig)
 
     displayConfirmAndExit("Continue to unstake?")
 
     const { request } = await publicClient.simulateContract({
         account,
-        abi: nftStake.abi,
-        address: nftStake.address,
+        address: stakeAddress,
+        abi: nftStakeABI,
         functionName: "unstake",
         args: [
             agencyStrategy[0],
@@ -231,7 +186,7 @@ const unstakeAgencyNFT = async () => {
     console.log(`Unstake Hash: ${chalk.blue(unstakeHash)}`)
 }
 
-const claimDotAgencyReward = async () => {
+const claimDotAgencyReward = async (stakeAddress: `0x${string}`) => {
     const agencyAddress = await selectWrapAddress(userConfig)
     const tokenIdOfDotAgency = await publicClient.readContract({
         address: agencyAddress,
@@ -240,26 +195,27 @@ const claimDotAgencyReward = async () => {
     })
 
     const reward = await publicClient.readContract({
-        ...nftStake,
+        address: stakeAddress,
+        abi: nftStakeABI,
         functionName: "claimForDotAgencyAccount",
         args: [tokenIdOfDotAgency]
     })
     
-    const { realizedReward, endBlockOfEpoch, appAddress } = await getDotAgencyRealizedReward(agencyAddress)
+    const { realizedReward, endBlockOfEpoch, appAddress } = await getDotAgencyRealizedReward(agencyAddress, stakeAddress)
 
     const nowBlockNumber = await publicClient.getBlockNumber()
     if (nowBlockNumber < endBlockOfEpoch) {
-        console.log(`When the block height reaches ${chalk.blue(endBlockOfEpoch)}, dotAgency will receive ${chalk.blue(realizedReward)} WRAP`)
+        // console.log(`When the block height reaches ${chalk.blue(endBlockOfEpoch)}, dotAgency will receive ${chalk.blue(realizedReward)} WRAP`)
 
-        console.log(`Claim Reward: ${chalk.blue(formatUnits(reward, 30))} WRAP`)
+        // console.log(`Claim Reward: ${chalk.blue(formatUnits(reward, 30))} WRAP`)
 
         displayConfirmAndExit("Continue to Claim .Agency reward?")
     } else {
-        console.log(`Claim Reward: ${chalk.blue(realizedReward)} WRAP`)
+        // console.log(`Claim Reward: ${chalk.blue(realizedReward)} WRAP`)
         const { request } = await publicClient.simulateContract({
             account,
-            abi: nftStake.abi,
-            address: nftStake.address,
+            address: stakeAddress,
+            abi: nftStakeABI,
             functionName: "updateRewardL1",
             args: [
                 appAddress
@@ -269,18 +225,18 @@ const claimDotAgencyReward = async () => {
         const updateRewardL1Hash = await walletClient.writeContract(request)
         console.log(`Update Reward L1 Hash: ${chalk.blue(updateRewardL1Hash)}`)
 
-        let newEndBlockOfEpoch = (await getAgentBaseInfo(appAddress)).endBlockOfEpoch
+        let newEndBlockOfEpoch = (await getAgentBaseInfo(appAddress, stakeAddress)).endBlockOfEpoch
 
         while (newEndBlockOfEpoch < nowBlockNumber) {
-            newEndBlockOfEpoch = (await getAgentBaseInfo(appAddress)).endBlockOfEpoch
+            newEndBlockOfEpoch = (await getAgentBaseInfo(appAddress, stakeAddress)).endBlockOfEpoch
             await sleep(12)
         }
     }
     
     const { request } = await publicClient.simulateContract({
         account,
-        abi: nftStake.abi,
-        address: nftStake.address,
+        address: stakeAddress,
+        abi: nftStakeABI,
         functionName: "claim",
         args: [
             tokenIdOfDotAgency
@@ -332,33 +288,35 @@ const nftStakeStep = async () => {
         ]
     })
 
+    const stakeAddressConfig = stakeVersionSelect.getStakeVersion()
+
     switch (selectStake) {
         case "stakeAgencyNFT":
-            await stakeAgencyNFT()
+            await stakeAgencyNFT(stakeAddressConfig)
             break
 
         case "unstakeAgencyNFT":
-            await unstakeAgencyNFT()
+            await unstakeAgencyNFT(stakeAddressConfig)
             break
 
         case "updatePoolL1":
-            await updatePoolL1()
+            await updatePoolL1(stakeAddressConfig)
             break
 
         case "withdrawL1Reward":
-            await withdrawL1Reward()
+            await withdrawL1Reward(stakeAddressConfig)
             break
 
         case "updatePoolL2":
-            await updatePoolL2()
+            await updatePoolL2(stakeAddressConfig)
             break
 
         case "claimDotAgencyReward":
-            await claimDotAgencyReward()
+            await claimDotAgencyReward(stakeAddressConfig)
             break
 
         case "withdrawReward":
-            await withdrawReward()
+            await withdrawReward(stakeAddressConfig)
             break
 
         default:
@@ -385,12 +343,12 @@ const stakeLP = async () => {
     })
 
 
-    console.log(`LP Token Approve: ${chalk.blue(formatEther(userAllowance.result))}`)
-    console.log(`LP Token Balance: ${chalk.blue(formatEther(userBalance.result))}`)
+    console.log(`LP Token Approve: ${chalk.blue(formatEther(userAllowance.result!))}`)
+    console.log(`LP Token Balance: ${chalk.blue(formatEther(userBalance.result!))}`)
 
     displayConfirmAndExit("Continue to stake LP Token?")
 
-    const depositAmount = await inputETHNumber("Input Deposit LP Token Amount: ", formatEther(userBalance.result))
+    const depositAmount = await inputETHNumber("Input Deposit LP Token Amount: ", formatEther(userBalance.result!))
 
     if (depositAmount > userAllowance.result!) {
         const approveAmount = await inputETHNumber("Input Approve LP Token Amount for Stake: ", formatEther(depositAmount))
@@ -543,6 +501,7 @@ export const stakeSelect = async () => {
     switch (selectStake) {
         case "stakeNFT":
             await versionSelect.setVersion();
+            await stakeVersionSelect.setStakeVersion();
             await nftStakeStep()
             break
 

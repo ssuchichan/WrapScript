@@ -1,7 +1,8 @@
 import select from '@inquirer/select'
 import { mintDotAgency, deployAppAndAgency, setTokenURIEngine, changeDotAgencyTokenURI, rebaseFee, claimLockWrapCoin, renouncePush, addDotAgency } from './mintDotAgency'
-import { approvePush } from "./utils/stake"
+import { approvePush, stakeSelect } from "./utils/stake"
 import chalk from 'chalk'
+import { stakeVersionSelect } from './config'
 
 const userSelect = await select({
     message: "Wrap Coin Interaction Selection",
@@ -76,7 +77,8 @@ switch (userSelect) {
         break;
 
     case "approvePush":
-        await approvePush()
+        const stakeAddressConfig = "0x89EB45962E758E7603cfd843f1B563b97cB84dA8"
+        await approvePush(stakeAddressConfig)
         break;
     
     case "claimLockWrapCoin":

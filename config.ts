@@ -2,7 +2,7 @@ import { createWalletClient, createPublicClient, http, PublicClient, WalletClien
 import { privateKeyToAccount } from 'viem/accounts'
 import { localhost, mainnet, sepolia } from 'viem/chains'
 import fs from 'fs'
-import { makeVersionSelect } from './utils/display'
+import { makeStakeVersionSelect, makeVersionSelect } from './utils/display'
 // https://1rpc.io/sepolia
 // 0xEd78bF31CD8E36c628e048D0e47e9a38913d34eF
 export const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`)
@@ -31,14 +31,14 @@ export const rpcUrl = process.env.RPC_URL
 export const walletClient: WalletClient = createWalletClient({
   account,
   chain: mainnet,
-  transport: http(rpcUrl)
-  // transport: http("http://127.0.0.1:8545")
+  // transport: http(rpcUrl)
+  transport: http("http://127.0.0.1:8545")
 })
 // console.log(`Account Address: ${account.address}`)
 export const publicClient: PublicClient = createPublicClient({
   chain: mainnet,
-  transport: http(rpcUrl)
-  // transport: http("http://127.0.0.1:8545")
+  // transport: http(rpcUrl)
+  transport: http("http://127.0.0.1:8545")
 }) as PublicClient;
 
 export const agencyAndAppConfig = [
@@ -91,3 +91,4 @@ export const tokenURIEngineConfig = [
 ]
 
 export const versionSelect = makeVersionSelect();
+export const stakeVersionSelect = makeStakeVersionSelect();

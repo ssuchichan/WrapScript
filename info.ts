@@ -1,6 +1,7 @@
 import select from '@inquirer/select'
 import { getDotAgencyEpochReward, getERC7527StakeData, lpStakeReward } from './utils/info';
 import { calculateDotAgencyAPY, calculateLpAPY } from './utils/apy';
+import { stakeVersionSelect } from './config';
 
 const userSelect = await select({
     message: "WrapCoin Data",
@@ -27,6 +28,8 @@ const userSelect = await select({
         }
     ]
 })
+
+await stakeVersionSelect.setStakeVersion();
 
 switch (userSelect) {
     case "erc7527StakeReward":

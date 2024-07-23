@@ -1280,6 +1280,11 @@ export const nftStake = {
     abi: nftStakeABI
 } as const;
 
+export const nftStakeV2 = {
+    address: "0x89EB45962E758E7603cfd843f1B563b97cB84dA8",
+    abi: nftStakeABI
+}
+
 export const lpStake = {
     address: "0xF9492aE19864c8ae91d55Ff274038c41928c37dB" as `0x${string}`,
     abi: lpStakeABI

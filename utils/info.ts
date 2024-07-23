@@ -2,15 +2,16 @@ import boxen from "boxen"
 import chalk from 'chalk'
 import { getAgencyStrategy, getAgentBaseInfo, getAgentName, getRealizedReward } from "./data"
 import { inputAddress } from "./display"
-import { publicClient, WrapCoinAddress } from "../config"
+import { publicClient, stakeVersionSelect, WrapCoinAddress } from "../config"
 import { agentABI } from "../abi/agent"
 import { formatEther, zeroAddress } from "viem"
-import { lpStake, nftStake } from "../abi/stake"
+import { lpStake, nftStakeABI } from "../abi/stake"
 import { erc20Abi } from "../abi/erc20Abi"
 
 export const getERC7527StakeData = async () => {
+    const stakeAddress = stakeVersionSelect.getStakeVersion()
     const appAddress = await inputAddress("Enter the ERC7527 token contract address: ")
-    const agentInfo = await getAgentBaseInfo(appAddress)
+    const agentInfo = await getAgentBaseInfo(appAddress, stakeAddress)
 
     const agencyAddress = await publicClient.readContract({
         abi: agentABI,
@@ -50,6 +51,7 @@ export const getERC7527StakeData = async () => {
 }
 
 export const getDotAgencyEpochReward = async () => {
+    const stakeAddress = stakeVersionSelect.getStakeVersion()
     const appAddress = await inputAddress("Enter the ERC7527 token contract address: ")
 
     const agencyAddress = await publicClient.readContract({
@@ -65,22 +67,26 @@ export const getDotAgencyEpochReward = async () => {
     const [endBlockOfEpoch, tokenPerBlock, lastRewardBlock] = await publicClient.multicall({
         contracts: [
             {
-                ...nftStake,
+                address: stakeAddress,
+                abi: nftStakeABI,
                 functionName: "endBlockOfEpoch"
             },
             {
-                ...nftStake,
+                address: stakeAddress,
+                abi: nftStakeABI,
                 functionName: "tokenPerBlock"
             },
             {
-                ...nftStake,
+                address: stakeAddress,
+                abi: nftStakeABI,
                 functionName: "lastRewardBlock"
             },
         ]
     })
 
     const stakingData = await publicClient.readContract({
-        ...nftStake,
+        address: stakeAddress,
+        abi: nftStakeABI,
         functionName: "stakingOfNFT",
         args: [appAddress]
     })
@@ -94,7 +100,8 @@ export const getDotAgencyEpochReward = async () => {
         })
 
         const [tvlOfTotal, accTokenPerShare] = await publicClient.readContract({
-            ...nftStake,
+            address: stakeAddress,
+            abi: nftStakeABI,
             functionName: "l1StakingOfERC20"
         })
 
@@ -123,6 +130,7 @@ export const getDotAgencyEpochReward = async () => {
         }
 
         const realizedReward = await getRealizedReward(
+            stakeAddress,
             lastRewardBlock.result!,
             tokenPerBlock.result!,
             true,
@@ -150,7 +158,8 @@ export const getDotAgencyEpochReward = async () => {
         })
 
         const [tvlOfTotal, accTokenPerShare] = await publicClient.readContract({
-            ...nftStake,
+            address: stakeAddress,
+            abi: nftStakeABI,
             functionName: "l1StakingOfETH"
         })
 
@@ -180,6 +189,7 @@ export const getDotAgencyEpochReward = async () => {
         }
 
         const realizedReward = await getRealizedReward(
+            stakeAddress,
             lastRewardBlock.result!,
             tokenPerBlock.result!,
             false,
@@ -245,7 +255,7 @@ export const lpStakeReward = async () => {
     }
 
     console.log(boxen(`Stake LP Amount: ${chalk.blue(formatEther(amount))} (${stakePercentage}%)\n`
-        + `Total LP Stake Amount: ${chalk.blue(formatEther(totalStakeLp.result))}\n`
+        + `Total LP Stake Amount: ${chalk.blue(formatEther(totalStakeLp.result!))}\n`
         + `Stake Reward: ${chalk.blue(formatEther(stakeReward))}\n`
         + `End BlockNumber Of Epoch: ${chalk.blue(Number(endBlockOfEpoch.result))}`, { padding: 1 }
     ))

@@ -5,6 +5,7 @@ import { UserConfig, agencyConfig, tokenURIEngineConfig, userConfig, versionSele
 import { select, input } from '@inquirer/prompts';
 import fs from 'fs'
 import { getAgencyStrategy, getAgencyVersion, isApproveOrOwner } from './data';
+import { nftStake, nftStakeV2 } from '../abi/stake';
 
 export const displayNotFundAndExit = (price: bigint, balance: bigint) => {
     if (balance < price) {
@@ -207,4 +208,36 @@ export const makeVersionSelect = () => {
     return {
         setVersion, getVersion
     }
-} 
+}
+
+export const makeStakeVersionSelect = () => {
+    let stakeVersion: "v2" | "v1" = "v2"
+
+    const setStakeVersion = async () => {
+        stakeVersion = await select({
+            message: "Wrap Coin Agency Version Selection",
+            choices: [
+                {
+                    name: "V2",
+                    value: "v2"
+                },
+                {
+                    name: "V1",
+                    value: "v1"
+                }
+            ]
+        })
+    }
+
+    const getStakeVersion = () => {
+        if (stakeVersion === "v1") {
+            return nftStake.address as `0x${string}`
+        } else {
+            return nftStakeV2.address as `0x${string}`
+        }
+    }
+
+    return {
+        setStakeVersion, getStakeVersion
+    }
+}
