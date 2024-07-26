@@ -4,7 +4,7 @@ import { dotAgency } from "../abi/dotAgency"
 import { erc20Abi } from "../abi/erc20Abi"
 import { erc6551Implementation, erc6551RegistryABI } from "../abi/erc6551"
 import { account, publicClient } from "../config"
-import { nftStakeABI } from "../abi/stake"
+import { nftStake, nftStakeABI } from "../abi/stake"
 import { wrapFactory } from "../abi/factory"
 import { fantomSonicTestnet } from "viem/chains"
 
@@ -284,3 +284,5 @@ export const getDotAgencyRealizedReward = async (agencyAddress: `0x${string}`, s
     }
 }
 // console.log(await getAgencyVersion("0xa55E3Ea7F5E0F4a7CB0dbc2C733D2fe2a5eDcBc4"))
+
+console.log(await getAgentBaseInfo("0x8ecea36c3161b17b3d30c3a253c628177998ee01", nftStake.address))
