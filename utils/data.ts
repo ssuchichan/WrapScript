@@ -285,4 +285,4 @@ export const getDotAgencyRealizedReward = async (agencyAddress: `0x${string}`, s
 }
 // console.log(await getAgencyVersion("0xa55E3Ea7F5E0F4a7CB0dbc2C733D2fe2a5eDcBc4"))
 
-console.log(await getAgentBaseInfo("0x8ecea36c3161b17b3d30c3a253c628177998ee01", nftStake.address))
+// console.log(await getAgentBaseInfo("0x8ecea36c3161b17b3d30c3a253c628177998ee01", nftStake.address))
