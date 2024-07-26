@@ -216,7 +216,7 @@ export const makeStakeVersionSelect = () => {
     const setStakeVersion = async () => {
         // stakeVersion = "v1"
         stakeVersion = await select({
-            message: "Wrap Coin Agency Version Selection",
+            message: "Wrap Coin Stake Version Selection",
             choices: [
                 {
                     name: "V2",
