@@ -126,7 +126,7 @@ export const getDotAgencyEpochReward = async () => {
                 functionName: "balanceOf",
                 args: ["0xC1d65a61955Ae7A0194B05CC53f05d9275C553b0"]
             })
-            epochReward = reawrd / BigInt(100) * BigInt(875) / BigInt(1000) / BigInt(1e20)
+            epochReward = reawrd / BigInt(100) * BigInt(875) / BigInt(1000) * tvlOfAgency / stakeTVL
         }
 
         const realizedReward = await getRealizedReward(
@@ -175,7 +175,7 @@ export const getDotAgencyEpochReward = async () => {
 
         if (nowBlockNumber < endBlockOfEpoch.result!) {
             endBlockNumberOfEpoch = endBlockOfEpoch.result!
-            epochReward = tokenPerBlock.result! * (endBlockNumberOfEpoch - nowBlockNumber) * BigInt(125) / BigInt(1000) * tvlOfAgency / stakeTVL
+            epochReward = tokenPerBlock.result! * (endBlockNumberOfEpoch - nowBlockNumber) * BigInt(125) / BigInt(1000) * tvlOfAgency / stakeTVL / BigInt(1e20)
         } else {
             endBlockNumberOfEpoch = nowBlockNumber + BigInt(42000)
 
@@ -185,7 +185,7 @@ export const getDotAgencyEpochReward = async () => {
                 functionName: "balanceOf",
                 args: ["0xC1d65a61955Ae7A0194B05CC53f05d9275C553b0"]
             })
-            epochReward = reawrd / BigInt(100) * BigInt(125) / BigInt(1000)
+            epochReward = reawrd / BigInt(100) * BigInt(125) / BigInt(1000) * tvlOfAgency / stakeTVL
         }
 
         const realizedReward = await getRealizedReward(
@@ -200,13 +200,13 @@ export const getDotAgencyEpochReward = async () => {
         )    
         console.log(boxen(`Agency Name: ${chalk.blue(agencyName)}\n`
             + `End BlockNumber Of Epoch: ${chalk.blue(Number(endBlockNumberOfEpoch))}\n`
-            + `DotAgency Reward: ${chalk.blue(formatInternalReward((realizedReward + stakingData[6]) * BigInt(5243)/ BigInt(1e12 * 65536)))}\n`
-            + `ERC7527 Reward: ${chalk.blue(formatInternalReward((realizedReward + stakingData[6]) * BigInt(58982) / BigInt(1e12 * 65536)))}\n`
-            + `DotAgency Expected Reward: ${chalk.blue(formatInternalReward(epochReward * BigInt(8) / BigInt(100)))}\n`
-            + `ERC7527 Expected Reward: ${chalk.blue(formatInternalReward(epochReward * BigInt(9) / BigInt(10)))}\n`
-            + `Epoch All Reward: ${chalk.blue(formatInternalReward(epochReward))}\n`
-            + `Agency TVL: ${chalk.blue(formatInternalReward(tvlOfAgency))}\n`
-            + `ETH Stake TVL: ${chalk.blue(formatInternalReward(stakeTVL))}`, { padding: 1 }
+            + `DotAgency Reward: ${chalk.blue(formatEther((realizedReward + stakingData[6]) * BigInt(5243)/ BigInt(1e20 * 65536)))}\n`
+            + `ERC7527 Reward: ${chalk.blue(formatEther((realizedReward + stakingData[6]) * BigInt(58982) / BigInt(1e20 * 65536)))}\n`
+            + `DotAgency Expected Reward: ${chalk.blue(formatEther(epochReward * BigInt(8) / BigInt(100)))}\n`
+            + `ERC7527 Expected Reward: ${chalk.blue(formatEther(epochReward * BigInt(9) / BigInt(10)))}\n`
+            + `Epoch All Reward: ${chalk.blue(formatEther(epochReward))}\n`
+            + `Agency TVL: ${chalk.blue(formatEther(tvlOfAgency))}\n`
+            + `ETH Stake TVL: ${chalk.blue(formatEther(stakeTVL))}`, { padding: 1 }
         ))
     }
 }
