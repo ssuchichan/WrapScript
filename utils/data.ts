@@ -212,9 +212,9 @@ export const getRealizedReward = async (
     let newAccTokenPerShare: bigint
 
     if (isWrapCoin) {
-        newAccTokenPerShare = accTokenPerShare + tokenReward * BigInt(1e12 * 37 / 40) / tvlOfTotal;
+        newAccTokenPerShare = accTokenPerShare + tokenReward * BigInt(37) / BigInt(40) / tvlOfTotal;
     } else {
-        newAccTokenPerShare = accTokenPerShare + tokenReward * BigInt(1e12 * 3 / 40) / tvlOfTotal;
+        newAccTokenPerShare = accTokenPerShare + tokenReward * BigInt(30) / BigInt(40) / tvlOfTotal;
     }
 
     const reward = (newAccTokenPerShare - rewardDebt) * stakingTvl;
