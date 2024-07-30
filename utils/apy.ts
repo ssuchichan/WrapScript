@@ -79,10 +79,10 @@ export const calculateDotAgencyAPY = async () => {
     const wrapReward = allReward * BigInt(7) / BigInt(8)
     const ethReward = allReward * BigInt(1) / BigInt(8)
 
-    const wrapAPY = wrapReward * BigInt(100) / l1StakingOfERC20.result![0]
+    const wrapAPY = wrapReward * BigInt(100) / BigInt(1e20) / l1StakingOfERC20.result![0]
 
     const stakeETHToWrap = await swapETHToWrap(l1StakingOfETH.result![0])
-    const ethAPY = ethReward * BigInt(100) / stakeETHToWrap
+    const ethAPY = ethReward * BigInt(100) / BigInt(1e20) / stakeETHToWrap
     
     // console.log(`WRAP Year Reward: ${formatEther(wrapReward)}`)
     // console.log(`ETH Year Reward: ${formatEther(ethReward)}`)

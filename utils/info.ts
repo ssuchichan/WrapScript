@@ -36,6 +36,7 @@ export const getERC7527StakeData = async () => {
         const stakeReward = agentInfo.unspentRewards / (agentInfo.points + BigInt(1)) / BigInt(1e20)
         console.log(boxen(`Agency Name: ${chalk.blue(agencyName)}\n`
             + `End BlockNumber Of Epoch: ${chalk.blue(Number(nowBlockNumber) + 42000)}\n`
+            + `Stake ERC7527 Token Count: ${chalk.blue(Number(agentInfo.points))}\n`
             + `Stake Reward: ${chalk.blue(formatEther(stakeReward))}`, { padding: 1 }
         ))
     } else {
@@ -43,6 +44,7 @@ export const getERC7527StakeData = async () => {
 
         console.log(boxen(`Agency Name: ${chalk.blue(agencyName)}\n`
             + `End BlockNumber Of Epoch: ${chalk.blue(Number(agentInfo.endBlockOfEpoch))}\n`
+            + `Stake ERC7527 Token Count: ${chalk.blue(Number(agentInfo.points))}\n`
             + `Stake Reward: ${chalk.blue(formatEther(stakeReward))}`, { padding: 1 }
         ))
     }
