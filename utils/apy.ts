@@ -87,11 +87,11 @@ export const calculateDotAgencyAPY = async () => {
     // console.log(`WRAP Year Reward: ${formatEther(wrapReward)}`)
     // console.log(`ETH Year Reward: ${formatEther(ethReward)}`)
 
-    console.log(`WRAP Stake TVL: ${formatEther(l1StakingOfERC20.result![0])} WRAP`)
-    console.log(`ETH Stake TVL: ${formatEther(l1StakingOfETH.result![0])} ETH`)
+    console.log(`ERC7527 Stake(WRAP) TVL: ${formatEther(l1StakingOfERC20.result![0])} WRAP`)
+    console.log(`ERC7527 Stake(ETH) TVL: ${formatEther(l1StakingOfETH.result![0])} ETH`)
 
-    console.log(`WRAP Stake Reward APY: ${wrapAPY}%`)
-    console.log(`ETH Stake Reward APY: ${ethAPY}%`)
+    console.log(`ERC7527 Stake(WRAP) Reward APY: ${wrapAPY}%`)
+    console.log(`ERC7527 Stake(ETH) Reward APY: ${ethAPY}%`)
 }
 
 export const calculateLpAPY = async () => {
