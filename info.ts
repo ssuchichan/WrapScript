@@ -29,8 +29,6 @@ const userSelect = await select({
     ]
 })
 
-await stakeVersionSelect.setStakeVersion();
-
 switch (userSelect) {
     case "erc7527StakeReward":
         await getERC7527StakeData()

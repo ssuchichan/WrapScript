@@ -5,11 +5,11 @@ import { inputAddress } from "./display"
 import { publicClient, stakeVersionSelect, WrapCoinAddress } from "../config"
 import { agentABI } from "../abi/agent"
 import { formatEther, zeroAddress } from "viem"
-import { lpStake, nftStakeABI } from "../abi/stake"
+import { lpStake, nftStakeABI, nftStakeV2 } from "../abi/stake"
 import { erc20Abi } from "../abi/erc20Abi"
 
 export const getERC7527StakeData = async () => {
-    const stakeAddress = stakeVersionSelect.getStakeVersion()
+    const stakeAddress = nftStakeV2.address
     const appAddress = await inputAddress("Enter the ERC7527 token contract address: ")
     const agentInfo = await getAgentBaseInfo(appAddress, stakeAddress)
 
@@ -53,7 +53,7 @@ export const getERC7527StakeData = async () => {
 }
 
 export const getDotAgencyEpochReward = async () => {
-    const stakeAddress = stakeVersionSelect.getStakeVersion()
+    const stakeAddress = nftStakeV2.address
     const appAddress = await inputAddress("Enter the ERC7527 token contract address: ")
 
     const agencyAddress = await publicClient.readContract({

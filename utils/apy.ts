@@ -1,7 +1,7 @@
 import { assertCurrentChain, formatEther, minInt104, parseAbi, parseEther } from "viem";
 import { uniswapV2RounterABI } from "../abi/uniswapV2Router";
 import { publicClient, stakeVersionSelect, walletClient } from "../config";
-import { lpStake, nftStake, nftStakeABI } from "../abi/stake";
+import { lpStake, nftStake, nftStakeABI, nftStakeV2 } from "../abi/stake";
 import { erc20Abi } from "../abi/erc20Abi";
 
 const uniswapV2Router = "0x7a250d5630b4cf539739df2c5dacb4c659f2488d" as `0x${string}`;
@@ -52,7 +52,7 @@ const swapLpToToken = async (lp: bigint) => {
 }
 
 export const calculateDotAgencyAPY = async () => {
-    const stakeAddress = stakeVersionSelect.getStakeVersion()
+    const stakeAddress = nftStakeV2.address
 
     const [tokenPerBlock, l1StakingOfERC20, l1StakingOfETH] = await publicClient.multicall({
         contracts: [
