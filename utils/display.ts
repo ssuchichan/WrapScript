@@ -1,7 +1,7 @@
 import { exit } from 'node:process';
 import chalk from 'chalk'
-import { isAddress, getAddress, parseEther, toHex, parseUnits } from "viem"
-import { UserConfig, agencyConfig, tokenURIEngineConfig, userConfig, versionSelect } from '../config'
+import { isAddress, getAddress, parseEther, toHex, parseUnits, publicActions, parseGwei, formatGwei } from "viem"
+import { UserConfig, agencyConfig, publicClient, stakeVersionSelect, tokenURIEngineConfig, userConfig, versionSelect } from '../config'
 import { select, input } from '@inquirer/prompts';
 import fs from 'fs'
 import { getAgencyStrategy, getAgencyVersion, isApproveOrOwner } from './data';
@@ -48,7 +48,7 @@ const mergeType = async (userConfig: UserConfig) => {
             const version = await getAgencyVersion(item.value as `0x${string}`);
             agency.push({ value: item.value, description: item.description, type: version });
         })
-        
+
         await Promise.all(promises);
         userConfig.version = 2
         userConfig.agency = agency
@@ -172,8 +172,8 @@ export const getExtraAgencyConfig = async (agencyImplementation: `0x${string}`) 
     switch (agencyImplementation) {
         case "0xA1bFB2dfe4D74B7729ED986A3DfDB60Db95Ae9eE":
             const coef = Number(await input({ message: "Please enter the k(integer): " }))
-            
-            const finalArgs = toHex(coef, { size: 32})
+
+            const finalArgs = toHex(coef, { size: 32 })
 
             return finalArgs
 
@@ -240,5 +240,12 @@ export const makeStakeVersionSelect = () => {
 
     return {
         setStakeVersion, getStakeVersion
+    }
+}
+
+export const highGasExit = async () => {
+    const gasPrice = await publicClient.getGasPrice()
+    if (gasPrice > parseGwei('30')) {
+        displayConfirmAndExit(`The current base Gas Price is too high (${formatGwei(gasPrice)} gwei), do you want to continue?`)
     }
 }

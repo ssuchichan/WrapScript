@@ -6,7 +6,7 @@ import { agentABI } from './abi/agent'
 import { erc6551AccountABI, erc6551Implementation, erc6551RegistryABI } from './abi/erc6551'
 import { concat, encodeAbiParameters, formatEther, getAddress, getFunctionSelector, keccak256, toHex, parseAbi, encodeFunctionData, formatUnits, parseUnits, encodePacked, hexToString } from "viem"
 import { confirm } from '@inquirer/prompts';
-import { displayNotFundAndExit, inputAddress, selectWrapAddress, selectTokenId, inputETHNumber, inputMoreThanMinimumValue, chooseAgencyNFTWithTokenId, getExtraAgencyConfig, selectDotAgency, inputTokenNumber, selectOrInputTokenURIEngineAddress, makeVersionSelect } from './utils/display'
+import { displayNotFundAndExit, inputAddress, selectWrapAddress, selectTokenId, inputETHNumber, inputMoreThanMinimumValue, chooseAgencyNFTWithTokenId, getExtraAgencyConfig, selectDotAgency, inputTokenNumber, selectOrInputTokenURIEngineAddress, makeVersionSelect, highGasExit } from './utils/display'
 import { exit } from 'node:process';
 import input from '@inquirer/input';
 import select from '@inquirer/select'
@@ -48,7 +48,7 @@ export const mintDotAgency = async () => {
 
         const userPrice = await inputETHNumber("Maximum cost available for mint(ETH): ", formatEther(nowDotAgencyPrice * BigInt(21) / BigInt(20)))
         // const priceNonce = await getPriceNonce()
-
+        await highGasExit()
         await mintDotAgencyName(dotAgencyName, userPrice, BigInt(0))
     }
 }
@@ -68,7 +68,7 @@ export const deployAppAndAgency = async () => {
         inputConfig = await getAgencyConfig(agencyImplementation as `0x${string}`, appImplementation as `0x${string}`)
         configIsTrue = await confirm({ message: 'Continue Deploy App and Agency?' })
     }
-
+    await highGasExit()
     await deployAgencyAndApp(inputConfig.tokenId, agencyImplementation as `0x${string}`, appImplementation as `0x${string}`, inputConfig.config, inputConfig.extraAgencyData)
     // console.log(`Agency Implementation: ${chalk.blue(agencyImplementation)}\nApp Implementation: ${chalk.blue(appImplementation)}`)
 }
@@ -86,7 +86,7 @@ export const setTokenURIEngine = async () => {
         functionName: 'setProxyTokenURIEngine',
         args: [tokenURIEngineAddress]
     })
-
+    await highGasExit()
     const setTokenURIHash = await walletClient.writeContract(request)
     console.log(`Set TokenURI Engine Hash: ${chalk.blue(setTokenURIHash)}`)
 }
@@ -107,7 +107,7 @@ export const changeDotAgencyTokenURI = async () => {
             functionName: 'setTokenURIEngine',
             args: [BigInt(dotAgencyTokenId), tokenURI]
         })
-    
+        await highGasExit()
         const setTokenURIHash = await walletClient.writeContract(request)
         console.log(`Set Agency TokenURI Hash: ${chalk.blue(setTokenURIHash)}`)
     }
@@ -169,7 +169,7 @@ export const rebaseFee = async () => {
             abi: agencyABI,
             functionName: "rebase",
         })
-
+        await highGasExit()
         const rebaseHash = await walletClient.writeContract(request)
 
         console.log(`Claim Reward Hash: ${chalk.blue(rebaseHash)}`)
@@ -203,6 +203,7 @@ export const wrap = async () => {
     const answer = await confirm({ message: 'Continue Mint ERC7527?' });
 
     if (answer) {
+        await highGasExit()
         await wrapAgency(agencyTokenName, userSlippagePrice, agencyAddress, agencyStrategy[1].currency)
     }
 }
@@ -228,6 +229,7 @@ export const unwrap = async () => {
             return
         } else {
             const userSlippagePrice = BigInt(0)
+            await highGasExit()
             await unwrapAgency(agencyTokenId, userSlippagePrice, agencyAddress, tokenName)
         }
     }
@@ -244,6 +246,8 @@ export const setUserTokenURIEngine = async () => {
         functionName: 'setTokenURIEngine',
         args: [agencySelectConfig.agencyTokenId, tokenURIEngineAddress]
     })
+
+    await highGasExit()
 
     const setTokenURIHash = await walletClient.writeContract(request)
     console.log(`Set TokenURI Engine Hash: ${chalk.blue(setTokenURIHash)}`)
@@ -311,6 +315,8 @@ export const createERC6551Account = async () => {
     })
 
     if (!accountBytecode) {
+        await highGasExit()
+
         const createAccountHash = await walletClient.writeContract(request)
         console.log(`Create ERC6551 Account Hash: ${chalk.blue(createAccountHash)}`)
     }
@@ -731,7 +737,7 @@ export const claimLockWrapCoin = async () => {
                 0
             ]
         })
-
+        await highGasExit()
         const claimHash = await walletClient.writeContract(request)
         console.log(`Claim Hash: ${chalk.blue(claimHash)}`)
     }

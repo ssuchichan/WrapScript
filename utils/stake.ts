@@ -1,7 +1,7 @@
 import { lpStake, nftStakeABI } from "../abi/stake"
 import { agencyABI } from "../abi/agency"
 import { account, walletClient, publicClient, userConfig, WrapCoinAddress, uniswapV2Pair, versionSelect, stakeVersionSelect } from "../config"
-import { chooseAgencyNFTWithTokenId, displayConfirmAndExit, inputETHNumber, selectWrapAddress } from './display'
+import { chooseAgencyNFTWithTokenId, displayConfirmAndExit, highGasExit, inputETHNumber, selectWrapAddress } from './display'
 import select from '@inquirer/select'
 import chalk from 'chalk'
 import { getAgencyStrategy, getAgentBaseInfo, getAgentERC6551AddressByTokenID, getDotAgencyRealizedReward, getERC20Approve } from "./data"
@@ -22,7 +22,7 @@ export const approvePush = async (stakeAddress: `0x${string}`) => {
             stakeAddress
         ]
     })
-
+    await highGasExit()
     const forceApproveHash = await walletClient.writeContract(request)
 
     console.log(`Push Config Hash: ${chalk.blue(forceApproveHash)}`)
@@ -40,6 +40,8 @@ const stakeAgencyNFT = async (stakeAddress: `0x${string}`) => {
             agencySelectConfig.agencyStrategy[0], agencySelectConfig.agencyTokenId
         ]
     })
+    await highGasExit()
+
     const stakeHash = await walletClient.writeContract(request)
 
     console.log(`Stake NFT Hash: ${chalk.blue(stakeHash)}`)
@@ -147,6 +149,8 @@ const withdrawReward = async (stakeAddress:  `0x${string}`) => {
 
     console.log(`Withdraw Reward: ${chalk.blue(formatEther(reward))}`)
 
+    await highGasExit()
+
     displayConfirmAndExit("Continue to withdraw reward?")
 
     const { request } = await publicClient.simulateContract({
@@ -159,7 +163,6 @@ const withdrawReward = async (stakeAddress:  `0x${string}`) => {
             agencyTokenId
         ]
     })
-
     const withdrawRewardHash = await walletClient.writeContract(request)
 
     console.log(`Withdraw Reward Hash: ${chalk.blue(withdrawRewardHash)}`)
@@ -180,7 +183,7 @@ const unstakeAgencyNFT = async (stakeAddress: `0x${string}`) => {
             agencyTokenId
         ]
     })
-
+    await highGasExit()
     const unstakeHash = await walletClient.writeContract(request)
 
     console.log(`Unstake Hash: ${chalk.blue(unstakeHash)}`)
@@ -204,6 +207,7 @@ const claimDotAgencyReward = async (stakeAddress: `0x${string}`) => {
     const { realizedReward, endBlockOfEpoch, appAddress } = await getDotAgencyRealizedReward(agencyAddress, stakeAddress)
 
     const nowBlockNumber = await publicClient.getBlockNumber()
+    // console.log(`End Block Of Epoch: ${chalk.blue(endBlockOfEpoch)} Now Block Number: ${chalk.blue(nowBlockNumber)}`)
     if (nowBlockNumber < endBlockOfEpoch) {
         // console.log(`When the block height reaches ${chalk.blue(endBlockOfEpoch)}, dotAgency will receive ${chalk.blue(realizedReward)} WRAP`)
 
@@ -221,7 +225,7 @@ const claimDotAgencyReward = async (stakeAddress: `0x${string}`) => {
                 appAddress
             ]
         })
-
+        await highGasExit()
         const updateRewardL1Hash = await walletClient.writeContract(request)
         console.log(`Update Reward L1 Hash: ${chalk.blue(updateRewardL1Hash)}`)
 
@@ -261,19 +265,9 @@ const nftStakeStep = async () => {
                 value: "unstakeAgencyNFT",
             },
             {
-                name: "Update Pool L1",
-                value: "updatePoolL1",
-                description: "Start a new L1 Epoch."
-            },
-            {
                 name: "Update L1 Reward",
                 value: "withdrawL1Reward",
                 description: "Update dotAgency rewards and allocate rewards to L2"
-            },
-            {
-                name: "Update Pool L2",
-                value: "updatePoolL2",
-                description: "Start a new L2 Epoch."
             },
             {
                 name: "Claim .Agency Reward",
@@ -299,16 +293,8 @@ const nftStakeStep = async () => {
             await unstakeAgencyNFT(stakeAddressConfig)
             break
 
-        case "updatePoolL1":
-            await updatePoolL1(stakeAddressConfig)
-            break
-
         case "withdrawL1Reward":
             await withdrawL1Reward(stakeAddressConfig)
-            break
-
-        case "updatePoolL2":
-            await updatePoolL2(stakeAddressConfig)
             break
 
         case "claimDotAgencyReward":
